@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -43,9 +45,9 @@ void main() async {
   windowManager.addListener(_AppWindowListener());
   await windowManager.setPreventClose(true);
 
-  // Check for updates 5 s after startup (non-blocking).
-  Future.delayed(const Duration(seconds: 5),
-      () => UpdaterService.instance.checkInBackground());
+  // Check for updates 5 s after startup (intentionally fire-and-forget).
+  unawaited(Future.delayed(const Duration(seconds: 5),
+      () => UpdaterService.instance.checkInBackground()));
 
   runApp(ProviderScope(
     overrides: [

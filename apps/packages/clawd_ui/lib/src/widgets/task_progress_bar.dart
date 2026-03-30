@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clawd_core/clawd_core.dart';
@@ -35,13 +37,14 @@ class _TaskProgressBarState extends ConsumerState<TaskProgressBar> {
   void initState() {
     super.initState();
     _fetch();
-    // Poll every 30 s.
-    Future.doWhile(() async {
+    // Poll every 30 s (intentionally fire-and-forget — widget lifecycle
+    // terminates the loop via the `mounted` guard).
+    unawaited(Future.doWhile(() async {
       await Future<void>.delayed(const Duration(seconds: 30));
       if (!mounted) return false;
       await _fetch();
       return mounted;
-    });
+    }));
   }
 
   Future<void> _fetch() async {

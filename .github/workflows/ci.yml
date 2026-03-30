@@ -53,14 +53,14 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+
       - name: Install melos
         run: dart pub global activate melos
 
       - name: Bootstrap workspace
         run: melos bootstrap
-
-      - name: Enable macOS desktop
-        run: flutter config --enable-macos-desktop
 
       - name: Build macOS debug (compile check)
         run: flutter build macos --debug
