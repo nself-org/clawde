@@ -20,13 +20,11 @@ pub async fn init_claw_dir(project_root: &Path) -> anyhow::Result<()> {
     }
 
     // Write README.md if not present.
-    // The canonical README lives at apps/.claw/README.md, two levels above
-    // the daemon crate root (daemon/src/ → daemon/ → apps/).
+    // The template is tracked at daemon/assets/claw-readme.md so it is always
+    // available in CI and in clean checkouts (apps/.claw/ is gitignored).
     let readme = claw.join("README.md");
     if !readme.exists() {
-        // Best-effort: the compiled-in README is from the apps/.claw/ directory.
-        // If the constant is unavailable at compile time we fall back silently.
-        const README_CONTENT: &str = include_str!("../../.claw/README.md");
+        const README_CONTENT: &str = include_str!("../assets/claw-readme.md");
         fs::write(&readme, README_CONTENT).await?;
     }
 
