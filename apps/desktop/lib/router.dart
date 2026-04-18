@@ -5,6 +5,7 @@ import 'package:clawde/features/sessions/sessions_screen.dart';
 import 'package:clawde/features/files/files_screen.dart';
 import 'package:clawde/features/git/git_screen.dart';
 import 'package:clawde/features/settings/settings_screen.dart';
+import 'package:clawde/features/settings/team_members_page.dart';
 import 'package:clawde/features/dashboard/agent_dashboard_screen.dart';
 import 'package:clawde/features/search/search_screen.dart';
 import 'package:clawde/features/packs/packs_screen.dart';
@@ -42,6 +43,7 @@ final appRouter = GoRouter(
         GoRoute(path: routeDoctor, builder: (_, __) => const DoctorScreen()),
         GoRoute(path: routeInstructions, builder: (_, __) => const InstructionsPanel()),
         GoRoute(path: routeSettings, builder: (_, __) => const SettingsScreen()),
+        GoRoute(path: '/settings/team', builder: (_, __) => const TeamMembersPage()),
         GoRoute(path: routeUsage, builder: (_, __) => const UsageDashboardScreen()),
         GoRoute(
           path: '$routeTaskDetail/:id',

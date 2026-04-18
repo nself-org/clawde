@@ -12,6 +12,8 @@ you to confirm (Free tier).
 | **Personal Remote** ($9.99/yr) | Daemon switches silently to the next account in your list |
 | **Cloud** ($20+/month) | We manage the account pool — no configuration needed |
 
+Starting with v1.0.9, the daemon uses round-robin selection when multiple non-rate-limited accounts are available, rather than always picking by priority order. The daemon tracks a cursor through the account list and advances it on each new session, wrapping back to the start after the last account. Priority ordering is still used as a fallback when only one account is available or when all others are rate-limited.
+
 ## Adding accounts (self-hosted)
 
 Account management is configured via `config.toml`. The daemon reads all accounts in

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:clawde/app.dart';
 import 'package:clawde/services/daemon_manager.dart';
+import 'package:clawde/services/hotkey_service.dart';
 import 'package:clawde/services/snackbar_service.dart';
 import 'package:clawde/services/tray_service.dart';
 import 'package:clawde/services/updater_service.dart';
@@ -39,6 +40,11 @@ void main() async {
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
+  });
+
+  await HotkeyService.instance.init(onActivated: () {
+    windowManager.show();
+    windowManager.focus();
   });
 
   // Intercept window close — minimize to tray rather than quit.

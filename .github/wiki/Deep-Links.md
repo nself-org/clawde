@@ -38,16 +38,21 @@ open "clawde://folder?path=/Users/you/projects/my-app"
 clawde://command?name=<commandName>
 ```
 
-Executes a named ClawDE command. This is the same command palette namespace used for keyboard-driven commands. Command names are case-sensitive.
+Executes a named ClawDE command. Command names are case-sensitive. The supported names are:
+
+| Name | Action |
+| --- | --- |
+| `new_session` | Start a new session in the current project root |
+| `search` | Open the search panel |
+| `settings` | Open the Settings window |
 
 Example:
 
 ```bash
-open "clawde://command?name=session.new"
-open "clawde://command?name=editor.formatDocument"
+open "clawde://command?name=new_session"
+open "clawde://command?name=search"
+open "clawde://command?name=settings"
 ```
-
-To list available command names, open the command palette in ClawDE (`⌘K` on macOS, `Ctrl+K` on Windows/Linux) and browse the list. Command names appear in the tooltip for each entry.
 
 ### Jump to a session
 

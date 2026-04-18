@@ -28,6 +28,8 @@ type HmacSha256 = Hmac<Sha256>;
 pub struct Features {
     pub relay: bool,
     pub auto_switch: bool,
+    #[serde(default)]
+    pub clawde_plus: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -45,6 +47,18 @@ impl LicenseInfo {
             features: Features::default(),
             grace_days_remaining: None,
         }
+    }
+
+    pub fn is_clawde_plus(&self) -> bool {
+        self.features.clawde_plus
+    }
+
+    pub fn is_relay_enabled(&self) -> bool {
+        self.features.relay
+    }
+
+    pub fn is_auto_switch_enabled(&self) -> bool {
+        self.features.auto_switch
     }
 }
 

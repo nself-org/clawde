@@ -2,11 +2,13 @@
 
 ClawDE+ ($1.99/mo or $19.99/yr) adds server-sync, mobile companion access, and team features to the free ClawDE desktop app.
 
+ClawDE+ is not part of the nSelf plugin store. It is an in-app subscription for ClawDE specifically. The license is validated by ClawDE's own auth flow against `api.clawde.io/daemon/verify`.
+
 ## Activating ClawDE+
 
 1. Subscribe at [nself.org/clawde/plus](https://nself.org/clawde/plus)
 2. Open ClawDE and go to **Settings → ClawDE+**
-3. Your license is validated automatically on each app launch
+3. Your license is validated automatically on each app launch against `api.clawde.io/daemon/verify`
 
 Your license key is stored in the system keychain. No manual entry is needed after the first activation. If your subscription lapses, ClawDE continues working in free mode: local sessions, LAN access, and local-only storage remain available.
 
@@ -18,11 +20,15 @@ Session titles and status sync to ClawDE's servers every 30 seconds while the de
 
 The sync endpoint is `api.clawde.io/sync/sessions`. The daemon posts a signed payload using your license key as the identity token. No session content leaves your machine.
 
+Sync is controlled via the `sync.setEnabled` RPC method. The desktop app exposes this as a toggle in **Settings → ClawDE+ → Sync**.
+
 To disable sync without cancelling ClawDE+, toggle **Settings → ClawDE+ → Sync** off.
 
 ### Mobile Companion (iOS and Android)
 
 The ClawDE mobile app connects to your desktop daemon via the relay at `api.clawde.io`. ClawDE+ is required on the desktop; the mobile app itself is free to download.
+
+The mobile app reads your session list from `GET api.clawde.io/sync/sessions`. This endpoint is available only when ClawDE+ sync is active on the desktop.
 
 What you can do from mobile:
 
@@ -43,7 +49,9 @@ Team features let multiple people share sessions on a single daemon. This is int
 - **Role control:** the session owner controls tool-call approvals by default. The owner can grant approval rights to a collaborator from the session toolbar.
 - **Session handoff:** transfer full session ownership to another team member. Useful for async review: finish your part, hand off, and let a colleague continue.
 
-Team features require Personal Remote tier or higher for all participants. The daemon routes collaboration traffic through the relay — no direct peer-to-peer connection between team members' machines.
+Team features require ClawDE+ for the session host. The daemon routes collaboration traffic through the relay — no direct peer-to-peer connection between team members' machines.
+
+The relevant RPC methods for team management are `team.listMembers` (returns current collaborators on a session) and `team.setSharedSessions` (controls which sessions are visible to team members).
 
 ## Pricing
 
