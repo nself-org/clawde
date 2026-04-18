@@ -1,5 +1,4 @@
-# OS.4 — GitHub Sponsors funding configuration.
-# Adds "Sponsor" button to the repository.
-github: [clawde-io]
+github: []
+ko_fi: nself
 custom:
-  - https://clawde.io/sponsor
+  - https://nself.org/pricing
