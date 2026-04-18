@@ -67,4 +67,4 @@ require("clawd").setup({
 
 ## Source
 
-[`apps/integrations/neovim/`](https://github.com/clawde-io/apps/tree/main/integrations/neovim)
+[`apps/integrations/neovim/`](https://github.com/nself-org/clawde/tree/main/integrations/neovim)

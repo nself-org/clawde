@@ -6,8 +6,8 @@ ClawDE is open source and welcomes contributions.
 
 | Channel | Purpose |
 | --- | --- |
-| [GitHub Issues](https://github.com/clawde-io/apps/issues) | Bug reports, feature requests |
-| [GitHub Discussions](https://github.com/clawde-io/apps/discussions) | Questions, ideas, show and tell |
+| [GitHub Issues](https://github.com/nself-org/clawde/issues) | Bug reports, feature requests |
+| [GitHub Discussions](https://github.com/nself-org/clawde/discussions) | Questions, ideas, show and tell |
 | [Discord](https://discord.gg/clawde) | Real-time chat, `#dev` for contributors |
 | [clawde.io/packs](https://clawde.io/packs) | Pack showcase — browse community packs |
 

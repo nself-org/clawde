@@ -24,24 +24,24 @@ The always-on background service that powers all ClawDE functionality. Written i
 ## CLI Commands
 
 ```bash
-clawde daemon start     # Start the daemon
-clawde daemon stop      # Stop the daemon
-clawde daemon status    # Check if daemon is running
-clawde daemon install   # Register with OS service manager
-clawde daemon uninstall # Remove from OS service manager
+clawd start             # Start the daemon
+clawd stop              # Stop the daemon
+clawd status            # Check if daemon is running
+clawd install           # Register with OS service manager
+clawd uninstall         # Remove from OS service manager
 ```
 
 ## How It Works
 
-1. On first install, `clawde daemon install` registers with your OS service manager
+1. On first install, `clawd install` registers with your OS service manager
 2. The daemon starts automatically at login
 3. It opens a local HTTP + WebSocket server (default: `localhost:4300`)
 4. Desktop, web, and mobile apps connect to this API
-5. All state is stored locally in `~/.clawde/` (SQLite database + JSONL logs)
+5. All state is stored locally in `~/.clawd/` (SQLite database + JSONL logs)
 
 ## Configuration
 
-The daemon reads `~/.clawde/config.toml`:
+The daemon reads `~/.clawd/config.toml`:
 
 ```toml
 [daemon]
@@ -49,6 +49,6 @@ port = 4300
 log_level = "info"
 
 [storage]
-db_path = "~/.clawde/clawde.db"
-log_path = "~/.clawde/logs/"
+db_path = "~/.clawd/clawd.db"
+log_path = "~/.clawd/logs/"
 ```

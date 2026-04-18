@@ -40,4 +40,4 @@ ClawDE is designed for international use. The architecture uses ARB files (Flutt
 
 See [Contributing](Contributing.md) for development setup, code style, and PR process.
 
-Feature requests and bug reports go to [GitHub Issues](https://github.com/clawde-io/apps/issues).
+Feature requests and bug reports go to [GitHub Issues](https://github.com/nself-org/clawde/issues).

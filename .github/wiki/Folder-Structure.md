@@ -1,7 +1,7 @@
 # Folder Structure
 
 ```text
-clawde/                          # Repository root (clawde-io/apps)
+clawde/                          # Repository root (nself-org/clawde)
 │
 ├── apps/                        # All application code
 │   ├── daemon/                  # clawd — Rust/Tokio daemon

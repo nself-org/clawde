@@ -63,7 +63,7 @@ brew upgrade clawd
 # Replace VERSION with the release tag, e.g. 0.2.0
 VERSION=0.2.0
 curl -fLo clawd.deb \
-  "https://github.com/clawde-io/apps/releases/download/v${VERSION}/clawd_${VERSION}_amd64.deb"
+  "https://github.com/nself-org/clawde/releases/download/v${VERSION}/clawd_${VERSION}_amd64.deb"
 sudo dpkg -i clawd.deb
 ```
 
@@ -77,7 +77,7 @@ systemctl --user enable --now clawd
 
 ## Windows
 
-1. Download `clawd-x86_64-pc-windows-msvc.exe` from [GitHub Releases](https://github.com/clawde-io/apps/releases/latest).
+1. Download `clawd-x86_64-pc-windows-msvc.exe` from [GitHub Releases](https://github.com/nself-org/clawde/releases/latest).
 2. Rename the file to `clawd.exe`.
 3. Move it to a directory in your `PATH` (e.g. `C:\Users\you\AppData\Local\Programs\clawd\`).
 4. Add that directory to `PATH` in System Settings if it is not already there.
@@ -92,7 +92,7 @@ clawd service install
 
 ## Manual Download
 
-Download any binary directly from [GitHub Releases](https://github.com/clawde-io/apps/releases/latest).
+Download any binary directly from [GitHub Releases](https://github.com/nself-org/clawde/releases/latest).
 
 | Platform | Binary |
 |----------|--------|

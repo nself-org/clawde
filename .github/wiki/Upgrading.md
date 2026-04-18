@@ -20,7 +20,7 @@ brew upgrade clawd   # macOS/Linux via Homebrew
 clawd start
 ```
 
-Or download the latest binary from [GitHub Releases](https://github.com/clawde-io/apps/releases).
+Or download the latest binary from [GitHub Releases](https://github.com/nself-org/clawde/releases).
 
 ## Database Migrations
 
@@ -107,4 +107,4 @@ See [[Changelog]] for version history and what changed in each release.
 
 ## Getting Help
 
-If you encounter issues after upgrading, check [[Troubleshooting]] first, then open an issue on [GitHub](https://github.com/clawde-io/apps/issues).
+If you encounter issues after upgrading, check [[Troubleshooting]] first, then open an issue on [GitHub](https://github.com/nself-org/clawde/issues).

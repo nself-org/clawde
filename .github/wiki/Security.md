@@ -65,7 +65,7 @@ Remote access routes traffic through the ClawDE relay at `api.clawde.io`.
 ## Reporting vulnerabilities
 
 Report security issues privately via GitHub Security Advisories:
-<https://github.com/clawde-io/apps/security/advisories/new>
+<https://github.com/nself-org/clawde/security/advisories/new>
 
 Please do not open public issues for security vulnerabilities.
 

@@ -4,7 +4,7 @@ Thanks for your interest in contributing to ClawDE.
 
 ## Before you start
 
-- Check [open issues](https://github.com/clawde-io/apps/issues) to avoid duplicate work
+- Check [open issues](https://github.com/nself-org/clawde/issues) to avoid duplicate work
 - For significant changes, open an issue first to discuss the approach
 - Read the [[Architecture]] page to understand how the pieces fit
 
@@ -13,7 +13,7 @@ Thanks for your interest in contributing to ClawDE.
 See [[Getting-Started]] for full setup instructions. Quick version:
 
 ```bash
-git clone https://github.com/clawde-io/apps.git
+git clone https://github.com/nself-org/clawde.git
 cd apps
 
 # Dart dependencies

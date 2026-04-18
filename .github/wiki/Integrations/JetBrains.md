@@ -12,7 +12,7 @@ ClawDE integrates with JetBrains IDEs (IntelliJ IDEA, WebStorm, PyCharm, GoLand,
 
 **Manual install** (development builds):
 
-1. Download `clawd-jetbrains-{version}.zip` from the [GitHub Releases](https://github.com/clawde-io/apps/releases)
+1. Download `clawd-jetbrains-{version}.zip` from the [GitHub Releases](https://github.com/nself-org/clawde/releases)
 2. Go to **Settings → Plugins → ⚙️ → Install Plugin from Disk**
 3. Select the ZIP file and restart
 
@@ -43,4 +43,4 @@ To change the daemon URL, go to **Settings → Tools → ClawDE** (available in 
 
 ## Source
 
-[`apps/integrations/jetbrains/`](https://github.com/clawde-io/apps/tree/main/integrations/jetbrains)
+[`apps/integrations/jetbrains/`](https://github.com/nself-org/clawde/tree/main/integrations/jetbrains)

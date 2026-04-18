@@ -81,6 +81,6 @@ If the database is corrupted, stop the daemon, rename the file (as a backup), an
 
 ## Getting help
 
-- [GitHub Issues](https://github.com/clawde-io/apps/issues) — bug reports and feature requests
+- [GitHub Issues](https://github.com/nself-org/clawde/issues) — bug reports and feature requests
 - Check the [FAQ](FAQ.md) for common questions
 - Log files include timestamps and error details that help diagnose issues

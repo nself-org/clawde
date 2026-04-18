@@ -32,7 +32,7 @@ The classifier fires signals based on what it reads in your message. Each signal
 - Code blocks: +1 per pair, up to +3
 - Moderate keywords like "refactor", "implement", "write a function": +2 points
 - Complex keywords like "audit", "security", "authentication", "across the codebase": +4 points each
-- Deep keywords like "architect from scratch", "novel", "comprehensive audit": forces DeepReasoning regardless of other signals
+- Deep keywords like "architect from scratch", "novel", "full audit": forces DeepReasoning regardless of other signals
 - Long session history (over 20 messages): +2 points
 
 **Score ranges:**

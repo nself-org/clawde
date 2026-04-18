@@ -28,7 +28,7 @@ Installs `clawd` to `~/.local/bin/`. Verifies SHA256 checksum before installing.
 
 ### Direct download
 
-Download the binary for your platform from [GitHub Releases](https://github.com/clawde-io/apps/releases):
+Download the binary for your platform from [GitHub Releases](https://github.com/nself-org/clawde/releases):
 
 | Platform | Binary |
 | --- | --- |

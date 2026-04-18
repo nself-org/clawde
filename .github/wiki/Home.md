@@ -44,12 +44,12 @@ brew install clawd
 
 | Platform | Binary |
 | --- | --- |
-| macOS (Apple Silicon) | [clawd-aarch64-apple-darwin](https://github.com/clawde-io/apps/releases/download/v0.1.0/clawd-aarch64-apple-darwin) |
-| macOS (Intel) | [clawd-x86_64-apple-darwin](https://github.com/clawde-io/apps/releases/download/v0.1.0/clawd-x86_64-apple-darwin) |
-| Linux x86_64 | [clawd-x86_64-unknown-linux-gnu](https://github.com/clawde-io/apps/releases/download/v0.1.0/clawd-x86_64-unknown-linux-gnu) |
-| Windows x86_64 | [clawd-x86_64-pc-windows-msvc.exe](https://github.com/clawde-io/apps/releases/download/v0.1.0/clawd-x86_64-pc-windows-msvc.exe) |
+| macOS (Apple Silicon) | [clawd-aarch64-apple-darwin](https://github.com/nself-org/clawde/releases/download/v0.1.0/clawd-aarch64-apple-darwin) |
+| macOS (Intel) | [clawd-x86_64-apple-darwin](https://github.com/nself-org/clawde/releases/download/v0.1.0/clawd-x86_64-apple-darwin) |
+| Linux x86_64 | [clawd-x86_64-unknown-linux-gnu](https://github.com/nself-org/clawde/releases/download/v0.1.0/clawd-x86_64-unknown-linux-gnu) |
+| Windows x86_64 | [clawd-x86_64-pc-windows-msvc.exe](https://github.com/nself-org/clawde/releases/download/v0.1.0/clawd-x86_64-pc-windows-msvc.exe) |
 
-All releases: [github.com/clawde-io/apps/releases](https://github.com/clawde-io/apps/releases)
+All releases: [github.com/nself-org/clawde/releases](https://github.com/nself-org/clawde/releases)
 
 ## Quick links
 

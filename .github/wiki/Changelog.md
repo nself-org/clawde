@@ -230,5 +230,5 @@ ship in v0.2.0.
 
 ---
 
-[Unreleased]: <https://github.com/clawde-io/apps/compare/v0.1.0...HEAD>
-[0.1.0]: <https://github.com/clawde-io/apps/releases/tag/v0.1.0>
+[Unreleased]: <https://github.com/nself-org/clawde/compare/v0.1.0...HEAD>
+[0.1.0]: <https://github.com/nself-org/clawde/releases/tag/v0.1.0>

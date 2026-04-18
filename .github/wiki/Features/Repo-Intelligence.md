@@ -4,7 +4,7 @@ Automatic detection, profiling, and monitoring of repository characteristics. Cl
 
 ## Overview
 
-When you register a repository with ClawDE, the repo intelligence engine scans it to build a comprehensive profile: what languages and frameworks you use, your coding conventions, your build tools, your test setup. This profile drives AI configuration generation and drift detection.
+When you register a repository with ClawDE, the repo intelligence engine scans it to build a complete profile: what languages and frameworks you use, your coding conventions, your build tools, your test setup. This profile drives AI configuration generation and drift detection.
 
 ## Capabilities
 

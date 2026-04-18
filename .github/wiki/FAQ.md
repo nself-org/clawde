@@ -22,4 +22,4 @@ All sessions, messages, and settings are stored in a local SQLite database at `~
 Yes. The Rust daemon and Flutter apps are MIT licensed in this repository. The ClawDE Cloud backend (which we operate) is proprietary.
 
 **How do I report a bug?**
-Open an [issue](https://github.com/clawde-io/apps/issues/new/choose) using the bug report template.
+Open an [issue](https://github.com/nself-org/clawde/issues/new/choose) using the bug report template.
