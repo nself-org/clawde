@@ -36,7 +36,7 @@ jobs:
           for f in $FILES; do
             # task/ is the D6 any-stack exception — whitelisted globally.
             case "$f" in
-              task/backend/*) echo "SKIP (D6 task/ exception): $f"; continue ;;
+              ntask/backend/*) echo "SKIP (D6 task/ exception): $f"; continue ;;
               *docker-compose.plugin.yml) echo "SKIP (plugin-fragment): $f"; continue ;;
             esac
 
