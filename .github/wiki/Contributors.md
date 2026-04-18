@@ -4,7 +4,7 @@ Thank you to everyone who has contributed to ClawDE.
 
 | Contributor | Commits |
 | --- | --- |
-| Aric Camarata <aric.camarata@gmail.com> | 76 |
-| github-actions[bot] <github-actions[bot]@users.noreply.github.com> | 17 |
+| Aric Camarata <aric.camarata@gmail.com> | 77 |
+| github-actions[bot] <github-actions[bot]@users.noreply.github.com> | 18 |
 
 *Generated automatically on every merge to main.*
