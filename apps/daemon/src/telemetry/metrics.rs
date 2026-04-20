@@ -113,9 +113,7 @@ pub fn aggregate_from_lines<'a>(
         }
     }
 
-    if latency_count > 0 {
-        metrics.avg_latency_ms = latency_sum / latency_count;
-    }
+    metrics.avg_latency_ms = latency_sum.checked_div(latency_count).unwrap_or(0);
 
     Ok(metrics)
 }

@@ -29,7 +29,7 @@ pub async fn test(ctx: &AppContext, params: Value) -> Result<Value> {
             "total": summary.total,
             "passed": summary.passed,
             "failed": summary.failed,
-            "pass_rate_pct": if summary.total > 0 { summary.passed * 100 / summary.total } else { 0 },
+            "pass_rate_pct": (summary.passed * 100).checked_div(summary.total).unwrap_or(0),
             "results": summary.results.iter().map(|r| json!({
                 "command": r.case.command,
                 "expected": format!("{:?}", r.case.expected),
@@ -48,7 +48,7 @@ pub async fn test(ctx: &AppContext, params: Value) -> Result<Value> {
             "total": summary.total,
             "passed": summary.passed,
             "failed": summary.failed,
-            "pass_rate_pct": if summary.total > 0 { summary.passed * 100 / summary.total } else { 0 },
+            "pass_rate_pct": (summary.passed * 100).checked_div(summary.total).unwrap_or(0),
             "overall_passed": summary.failed == 0,
         }))
     }

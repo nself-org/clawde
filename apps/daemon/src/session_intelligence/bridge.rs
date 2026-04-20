@@ -140,11 +140,10 @@ pub async fn build_bridge(storage: &Storage, session_id: &str) -> Result<BridgeC
 
     for row in &rows {
         match row.role.as_str() {
-            "system" => {
-                if system_prompt.is_none() {
-                    system_prompt = Some(row.content.clone());
-                }
+            "system" if system_prompt.is_none() => {
+                system_prompt = Some(row.content.clone());
             }
+            "system" => {}
             "user" => {
                 last_user = Some(row.content.clone());
                 if row.pinned != 0 && pinned_messages.len() < MAX_PINNED {

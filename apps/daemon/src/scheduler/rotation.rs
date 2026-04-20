@@ -51,6 +51,6 @@ pub async fn select_account(
     }
 
     // Pick the highest-scored candidate.
-    candidates.sort_by(|a, b| b.1.cmp(&a.1));
+    candidates.sort_by_key(|b| std::cmp::Reverse(b.1));
     Ok(candidates.remove(0).0)
 }

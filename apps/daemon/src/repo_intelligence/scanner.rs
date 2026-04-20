@@ -99,7 +99,7 @@ pub fn detect_primary_language(repo_path: &Path) -> PrimaryLanguage {
     // Fall back to file extension counts
     let counts = count_by_language(repo_path, 5);
     let mut ordered: Vec<(PrimaryLanguage, usize)> = counts.into_iter().collect();
-    ordered.sort_by(|a, b| b.1.cmp(&a.1));
+    ordered.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     match ordered.first() {
         Some((lang, count)) if *count > 0 => lang.clone(),
@@ -117,7 +117,7 @@ pub fn detect_secondary_languages(
         .into_iter()
         .filter(|(lang, count)| lang != primary && *count >= 5)
         .collect();
-    result.sort_by(|a, b| b.1.cmp(&a.1));
+    result.sort_by_key(|b| std::cmp::Reverse(b.1));
     result.into_iter().map(|(lang, _)| lang).collect()
 }
 

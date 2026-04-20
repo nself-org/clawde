@@ -45,22 +45,7 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 unmaintained = "none"
 yanked = "deny"
 
-# Known wasmtime advisories that do not apply to our usage:
-# We use wasmtime 28 as a sandboxed plugin runtime. Plugins require Ed25519
-# signature verification before loading, so guest-controlled attacks require
-# a compromised trusted plugin. The minimum patched version for all four
-# advisories is wasmtime >=41.0.4, which introduces breaking API changes.
-# Tracked for upgrade in Sprint FF-2 (plugin runtime hardening).
-ignore = [
-    # RUSTSEC-2025-0046: fd_renumber WASIp1 panic — we don't expose WASI preview 1
-    "RUSTSEC-2025-0046",
-    # RUSTSEC-2025-0118: Unsound shared linear memory — we don't use shared memory
-    "RUSTSEC-2025-0118",
-    # RUSTSEC-2026-0020: Guest resource exhaustion in WASI — plugins are signature-verified
-    "RUSTSEC-2026-0020",
-    # RUSTSEC-2026-0021: wasi:http/types.fields panic — we don't expose wasi:http
-    "RUSTSEC-2026-0021",
-]
+ignore = []
 
 [sources]
 # Only allow crates from crates.io and the git repos explicitly used

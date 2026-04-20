@@ -39,46 +39,43 @@ pub fn check_tool_allowed(
 
     match tool_name {
         // ── Network tools ────────────────────────────────────────────────────
-        "http_get" | "http_post" | "web_fetch" | "curl" | "wget" => {
-            if !has("network") {
-                return Some(ForbiddenToolViolation {
-                    tool_name: tool_name.to_string(),
-                    reason: format!(
-                        "`{}` requires network access, which has not been granted",
-                        tool_name
-                    ),
-                    permission_needed: "network".to_string(),
-                });
-            }
+        "http_get" | "http_post" | "web_fetch" | "curl" | "wget" if !has("network") => {
+            return Some(ForbiddenToolViolation {
+                tool_name: tool_name.to_string(),
+                reason: format!(
+                    "`{}` requires network access, which has not been granted",
+                    tool_name
+                ),
+                permission_needed: "network".to_string(),
+            });
         }
+        "http_get" | "http_post" | "web_fetch" | "curl" | "wget" => {}
 
         // ── Shell execution ──────────────────────────────────────────────────
-        "bash" | "shell" | "exec" | "run_command" | "execute" => {
-            if !has("shell_exec") {
-                return Some(ForbiddenToolViolation {
-                    tool_name: tool_name.to_string(),
-                    reason: format!(
-                        "`{}` requires shell execution permission, which has not been granted",
-                        tool_name
-                    ),
-                    permission_needed: "shell_exec".to_string(),
-                });
-            }
+        "bash" | "shell" | "exec" | "run_command" | "execute" if !has("shell_exec") => {
+            return Some(ForbiddenToolViolation {
+                tool_name: tool_name.to_string(),
+                reason: format!(
+                    "`{}` requires shell execution permission, which has not been granted",
+                    tool_name
+                ),
+                permission_needed: "shell_exec".to_string(),
+            });
         }
+        "bash" | "shell" | "exec" | "run_command" | "execute" => {}
 
         // ── Git write operations ─────────────────────────────────────────────
-        "git_push" | "git_force_push" => {
-            if !has("git") {
-                return Some(ForbiddenToolViolation {
-                    tool_name: tool_name.to_string(),
-                    reason: format!(
-                        "`{}` requires git push permission, which has not been granted",
-                        tool_name
-                    ),
-                    permission_needed: "git".to_string(),
-                });
-            }
+        "git_push" | "git_force_push" if !has("git") => {
+            return Some(ForbiddenToolViolation {
+                tool_name: tool_name.to_string(),
+                reason: format!(
+                    "`{}` requires git push permission, which has not been granted",
+                    tool_name
+                ),
+                permission_needed: "git".to_string(),
+            });
         }
+        "git_push" | "git_force_push" => {}
 
         // ── Write tools — check worktree boundary ────────────────────────────
         "write_file" | "edit_file" | "create_file" | "delete_file" | "move_file" => {

@@ -164,7 +164,7 @@ impl AnalyticsStorage {
         }
 
         let mut result: Vec<ProviderBreakdown> = map.into_values().collect();
-        result.sort_by(|a, b| b.sessions.cmp(&a.sessions));
+        result.sort_by_key(|b| std::cmp::Reverse(b.sessions));
         Ok(result)
     }
 

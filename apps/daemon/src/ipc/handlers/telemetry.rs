@@ -80,7 +80,7 @@ pub async fn summary(params: Value, ctx: &AppContext) -> Result<Value> {
     }
 
     // Most recent day first.
-    daily_metrics.sort_by(|a, b| b.date.cmp(&a.date));
+    daily_metrics.sort_by_key(|b| std::cmp::Reverse(b.date));
 
     Ok(json!({
         "daily_metrics": daily_metrics,

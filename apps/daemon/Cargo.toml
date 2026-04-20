@@ -30,7 +30,7 @@ sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "tls-none", "mi
 
 # Git integration — no subprocess spawning, local operations only (no fetch/push/SSH)
 # vendored-libgit2: statically build libgit2, cross-compilation safe, no OpenSSL needed
-git2 = { version = "0.19", default-features = false, features = ["vendored-libgit2"] }
+git2 = { version = "0.20", default-features = false, features = ["vendored-libgit2"] }
 
 # File watching (cross-platform, debounced)
 notify = "7"
@@ -122,7 +122,7 @@ libc = "0.2"
 # libloading: dlopen native dylib plugins (.so/.dylib/.dll)
 libloading = "0.8"
 # wasmtime: WASM plugin sandbox (cranelift JIT backend, no OpenSSL)
-wasmtime = { version = "28", default-features = false, features = ["cranelift", "runtime", "component-model"] }
+wasmtime = { version = "43", default-features = false, features = ["cranelift", "runtime", "component-model"] }
 # clawd_plugin_abi: stable C ABI types shared with plugins
 clawd_plugin_abi = { path = "../packages/clawd_plugin_abi" }
 
