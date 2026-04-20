@@ -1,0 +1,25 @@
+name: Multi-Arch Check
+
+# Asserts multi-architecture build compatibility.
+# Repo type: Flutter AI dev environment (nself-org/clawde)
+# Authority: S30-T05, STORM-CROSS-PLATFORM
+# Template: .claude/docs/doctrines/multi-arch-check.workflow.yml
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  multi-arch-stub:
+    name: Multi-arch check (N/A)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Report repo type
+        run: |
+          echo "Repo type: Flutter AI dev environment (nself-org/clawde)"
+          echo "No Go binaries or Docker images produced. Multi-arch check N/A. PASS."
+
