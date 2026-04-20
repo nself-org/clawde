@@ -9,6 +9,11 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — v0.2.0
 
+### Fixed
+
+- ci: add `workflow_dispatch` trigger to CI workflow for manual re-runs (S26 T02)
+- ci: `sqflite ^2.4.2` requires Dart >=3.7.0; fixed by re-triggering CI with Flutter stable 3.41.4 (Dart 3.11.1) which satisfies the constraint
+
 ### Added
 
 #### Daemon (`clawd`)
