@@ -76,8 +76,16 @@ class FileBatchReplayState {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-@riverpod
-class FileBatchReplay extends _$FileBatchReplay {
+/// Provider that captures `file.batchReplay` daemon push notifications.
+///
+/// Expose as an [AutoDisposeAsyncNotifierProvider] so it tears down cleanly
+/// when no widget is watching.
+final fileBatchReplayProvider =
+    AsyncNotifierProvider.autoDispose<FileBatchReplay, FileBatchReplayState>(
+  FileBatchReplay.new,
+);
+
+class FileBatchReplay extends AutoDisposeAsyncNotifier<FileBatchReplayState> {
   StreamSubscription<Map<String, dynamic>>? _subscription;
 
   @override

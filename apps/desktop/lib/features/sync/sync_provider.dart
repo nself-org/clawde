@@ -34,15 +34,18 @@ class SyncStatusState {
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 
-/// Watches the daemon license state to determine whether ClawDE+ server-sync
-/// is enabled, and exposes last-sync timestamp and any sync error.
+/// Provider that reflects the ClawDE+ server-sync feature-gate state.
 ///
-/// The daemon performs the actual sync loop; this provider reflects the
-/// feature-gate state by calling `license.get` and reading
-/// `features.clawdePlus`. When [syncEnabled] is true the daemon is syncing
-/// session snapshots to `api.clawde.io/sync/sessions` every 30 seconds.
-@riverpod
-class SyncState extends _$SyncState {
+/// The daemon performs the actual sync loop; this provider calls `license.get`
+/// and reads `features.clawdePlus`. When [SyncStatusState.syncEnabled] is
+/// true the daemon is syncing session snapshots to
+/// `api.clawde.io/sync/sessions` every 30 seconds.
+final syncStateProvider =
+    NotifierProvider.autoDispose<SyncState, SyncStatusState>(
+  SyncState.new,
+);
+
+class SyncState extends AutoDisposeNotifier<SyncStatusState> {
   @override
   SyncStatusState build() {
     // Kick off an async check immediately, then rebuild when daemon state changes.

@@ -53,6 +53,12 @@ dependencies:
   # Open URLs in browser (GitHub links, release notes)
   url_launcher: ^6.3.1
 
+  # Deep links (clawde:// scheme on macOS/Windows/Linux)
+  app_links: ^6.3.0
+
+  # Global hotkeys (system-wide summon shortcut)
+  hotkey_manager: ^0.2.0
+
   # QR code display (Connection settings — scan from mobile)
   qr_flutter: ^4.1.0
 

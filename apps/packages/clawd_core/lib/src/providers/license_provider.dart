@@ -21,6 +21,14 @@ class LicenseStatus {
 
   bool get inGracePeriod => graceDaysRemaining != null;
 
+  /// Whether the ClawDE+ tier is active (personal-remote or any cloud tier).
+  bool get clawdePlus => tier == 'personal-remote' ||
+      tier == 'cloud-basic' ||
+      tier == 'cloud-pro' ||
+      tier == 'cloud-max' ||
+      tier == 'teams' ||
+      tier == 'enterprise';
+
   factory LicenseStatus.free() => const LicenseStatus(
         tier: 'free',
         relayEnabled: false,
