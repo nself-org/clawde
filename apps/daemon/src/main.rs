@@ -35,11 +35,11 @@ struct Args {
     command: Option<Command>,
 
     /// JSON-RPC WebSocket server port
-    #[arg(long, env = "CLAWD_PORT")]
+    #[arg(long, env = "CLAWD_PORT", global = true)]
     port: Option<u16>,
 
     /// Data directory for sessions, config, and SQLite database
-    #[arg(long, env = "CLAWD_DATA_DIR")]
+    #[arg(long, env = "CLAWD_DATA_DIR", global = true)]
     data_dir: Option<std::path::PathBuf>,
 
     /// Log level (trace, debug, info, warn, error)

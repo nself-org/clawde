@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../lib/features/file_tree/file_tree_widget.dart';
+import 'package:clawde/features/file_tree/file_tree_widget.dart';
 
 void main() {
   group('FileTreeWidget — Semantics', () {
@@ -37,7 +37,10 @@ void main() {
       final node = tester.getSemantics(find.byType(Semantics).first);
       expect(node.label, equals('main.dart'));
       expect(node.hint, equals('Tap to open file'));
-      expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+      // Verify button-like interactivity via tap action (portable across
+      // Flutter versions; SemanticsFlag.isButton was removed in newer
+      // Flutter in favor of flagsCollection / SemanticsAction.tap).
+      expect(node.hasAction(SemanticsAction.tap), isTrue);
     });
 
     testWidgets('directory node has expanded/collapsed state in label',
@@ -70,15 +73,15 @@ void main() {
 
     testWidgets('file icon is excluded from semantics tree', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: Row(
               children: [
                 ExcludeSemantics(
-                  child: const Icon(Icons.description, size: 14),
+                  child: Icon(Icons.description, size: 14),
                 ),
-                const SizedBox(width: 6),
-                const Text('README.md'),
+                SizedBox(width: 6),
+                Text('README.md'),
               ],
             ),
           ),
