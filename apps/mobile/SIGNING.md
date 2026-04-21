@@ -15,7 +15,7 @@ Secrets live in `~/.claude/vault.env` and GitHub Actions secrets.
 |---|---|---|
 | iOS (main app) | `com.nself.clawde.mobile` | Must match AASA template (`ios/apple-app-site-association-template.json`) |
 | iOS (notification extension) | `com.nself.clawde.mobile.notifications` | Reserved; enable when rich push is added |
-| Android (application ID) | `io.nself.clawde.mobile` | Must match `assetlinks-template.json` |
+| Android (application ID) | `com.nself.clawde.mobile` | Must match `assetlinks-template.json` |
 
 ---
 
@@ -138,4 +138,4 @@ Actions secrets with identical names.
 
 ---
 
-**Last updated:** 2026-04-17 (Sprint S37 T06 + T07)
+**Last updated:** 2026-04-20 (S52-T02: renamed Android applicationId from io.nself.clawde.mobile to com.nself.clawde.mobile; both platforms now use com.nself.clawde.mobile)

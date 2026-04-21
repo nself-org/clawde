@@ -1,4 +1,4 @@
-package com.example.clawde_mobile
+package com.nself.clawde.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,0 +1,15 @@
+title = "nSelf gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlist.paths]]
+description = "Test fixtures and example files"
+paths = [
+  "testdata/",
+  "*.example",
+  "*.example.env",
+  ".env.example",
+  ".env.dev",
+  ".env.staging",
+]

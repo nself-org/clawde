@@ -1,5 +1,7 @@
 # ClawDE+
 
+> **Status: Coming v1.1.0** — ClawDE+ subscription is not yet available at v1.0.9. The ClawDE desktop app ships as Free Beta. Full ClawDE+ (server-sync, mobile companion, team features) launches at v1.1.0. Bundle ID registration and store submission are also v1.1.0 targets (mobile apps are in alpha; not on App Store / Play Store at v1.0.9).
+
 ClawDE+ ($1.99/mo or $19.99/yr) adds server-sync, mobile companion access, and team features to the free ClawDE desktop app.
 
 ClawDE+ is not part of the nSelf plugin store. It is an in-app subscription for ClawDE specifically. The license is validated by ClawDE's own auth flow against `api.clawde.io/daemon/verify`.

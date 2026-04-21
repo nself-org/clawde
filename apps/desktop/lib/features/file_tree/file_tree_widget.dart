@@ -161,33 +161,45 @@ class _FileNodeTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
-          onTap: () => onTap(node),
-          onSecondaryTapDown: (d) => onContextMenu(node, d.globalPosition),
-          child: Container(
-            color: isSelected ? const Color(0xFF1f2937) : Colors.transparent,
-            padding: EdgeInsets.only(left: 8.0 + depth * 12.0, right: 8, top: 4, bottom: 4),
-            child: Row(
-              children: [
-                Icon(
-                  node.isDirectory
-                      ? (node.isExpanded ? Icons.folder_open : Icons.folder)
-                      : _fileIcon(node.name),
-                  size: 14,
-                  color: node.isDirectory ? const Color(0xFFfbbf24) : const Color(0xFF6b7280),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    node.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : const Color(0xFFd1d5db),
+        Semantics(
+          label: node.isDirectory
+              ? '${node.name} folder${node.isExpanded ? ", expanded" : ", collapsed"}'
+              : node.name,
+          selected: isSelected,
+          button: true,
+          hint: node.isDirectory
+              ? (node.isExpanded ? 'Tap to collapse' : 'Tap to expand')
+              : 'Tap to open file',
+          child: GestureDetector(
+            onTap: () => onTap(node),
+            onSecondaryTapDown: (d) => onContextMenu(node, d.globalPosition),
+            child: Container(
+              color: isSelected ? const Color(0xFF1f2937) : Colors.transparent,
+              padding: EdgeInsets.only(left: 8.0 + depth * 12.0, right: 8, top: 4, bottom: 4),
+              child: Row(
+                children: [
+                  ExcludeSemantics(
+                    child: Icon(
+                      node.isDirectory
+                          ? (node.isExpanded ? Icons.folder_open : Icons.folder)
+                          : _fileIcon(node.name),
+                      size: 14,
+                      color: node.isDirectory ? const Color(0xFFfbbf24) : const Color(0xFF6b7280),
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      node.name,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected ? Colors.white : const Color(0xFFd1d5db),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
