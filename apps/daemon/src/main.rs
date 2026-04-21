@@ -983,8 +983,13 @@ async fn main() -> Result<()> {
             run_logs(&config, follow, lines, filter.as_deref())?;
         }
         Some(Command::Account { cmd }) => {
-            let config =
-                DaemonConfig::new(None, args.data_dir, Some("error".to_string()), None, None);
+            let config = DaemonConfig::new(
+                args.port,
+                args.data_dir,
+                Some("error".to_string()),
+                None,
+                None,
+            );
             run_account(&config, cmd).await?;
         }
         Some(Command::SignRun {
