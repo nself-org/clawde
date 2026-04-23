@@ -4,7 +4,7 @@ The host-first AI development environment.
 
 One daemon. Every provider. Any device.
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/nself-org/clawde/releases)
+[![Version](https://img.shields.io/github/v/release/nself-org/clawde?label=version)](https://github.com/nself-org/clawde/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/nself-org/clawde/actions/workflows/test.yml/badge.svg)](https://github.com/nself-org/clawde/actions/workflows/test.yml)
 <!-- VERSION_BADGE -->
