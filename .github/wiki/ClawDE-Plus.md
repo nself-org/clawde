@@ -1,8 +1,8 @@
 # ClawDE+
 
-> **Status: Coming v1.1.0** — ClawDE+ subscription is not yet available at v1.0.9. The ClawDE desktop app ships as Free Beta. Full ClawDE+ (server-sync, mobile companion, team features) launches at v1.1.0. Bundle ID registration and store submission are also v1.1.0 targets (mobile apps are in alpha; not on App Store / Play Store at v1.0.9).
+> **Status: Coming v1.1.0** — ClawDE subscription is not yet available at v1.0.9. The ClawDE desktop app ships as Free Beta. Full ClawDE bundle (server-sync, mobile companion, team features) launches at v1.1.0. Bundle ID registration and store submission are also v1.1.0 targets (mobile apps are in alpha; not on App Store / Play Store at v1.0.9).
 
-ClawDE+ ($1.99/mo or $19.99/yr) adds server-sync, mobile companion access, and team features to the free ClawDE desktop app.
+ClawDE ($0.99/mo or $9.99/yr) adds server-sync, mobile companion access, and team features to the free ClawDE desktop app.
 
 ClawDE+ is not part of the nSelf plugin store. It is an in-app subscription for ClawDE specifically. The license is validated by ClawDE's own auth flow against `api.clawde.io/daemon/verify`.
 
@@ -59,10 +59,10 @@ The relevant RPC methods for team management are `team.listMembers` (returns cur
 
 | Billing | Price |
 | --- | --- |
-| Monthly | $1.99/mo |
-| Annual | $19.99/yr (saves ~17%) |
+| Monthly | $0.99/mo |
+| Annual | $9.99/yr (saves ~16%) |
 
-Cancel any time from your account page at [nself.org/account](https://nself.org/account). After cancellation, ClawDE+ features are available until the end of the current billing period, then the app reverts to free mode.
+Cancel any time from your account page at [nself.org/account](https://nself.org/account). After cancellation, ClawDE bundle features are available until the end of the current billing period, then the app reverts to free mode.
 
 ## Related
 
