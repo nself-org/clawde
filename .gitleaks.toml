@@ -69,11 +69,13 @@ paths = [
   '''\.github/workflows/gitleaks\.yml''',
   '''daemon/benches/.*''',
   '''daemon/tests/.*''',
+  '''daemon/src/policy/.*''',
   '''packs/security/memory/.*''',
 ]
 regexes = [
   '''sk_live_FAKE_TEST_FOR_CI_GATE''',
   '''sk-abcdef12345''',
+  '''sk-abcdefghijklmnopqrstuvwxyz1234567890''',
   '''AKIA_FAKE_TEST_KEY_DO_NOT_USE''',
   '''AKIAIOSFODNN7EXAMPLE''',
   '''AIza_FAKE_GOOGLE_KEY_DO_NOT_USE''',
