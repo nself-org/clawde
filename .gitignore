@@ -92,3 +92,9 @@ FEEDBACK.md
 NEXT.md
 TRACKING.md
 PLAN.md
+
+# nself build generates docker-compose.yml — never track it (may contain secrets)
+backend/docker-compose.yml
+backend/docker-compose.override.yml
+docker-compose.yml
+docker-compose.override.yml
