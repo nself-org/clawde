@@ -22,14 +22,15 @@ jobs:
           fetch-depth: 0
 
       - name: ClawDE AI Review
-        uses: clawde-io/clawd-action@v1
+        uses: anthropics/claude-code-action@fefa07e9c665b7320f08c3b525980457f22f58aa # v1.0.111
         with:
-          task: >
+          prompt: >
             Review this pull request for:
             1. Security vulnerabilities
             2. Logic errors or edge cases
             3. Missing error handling
             4. Performance issues
             Post a concise review comment with findings grouped by severity.
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          post-comment: 'true'
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          use_sticky_comment: 'true'

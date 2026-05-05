@@ -3,6 +3,24 @@
 # Runs after every push to main. Uses `git log` to build the list,
 # then commits the updated .github/wiki/Contributors.md back to the repo.
 # Wiki sync workflow picks up the change and pushes it to the GitHub Wiki.
+#
+# AUTH NOTE (P99-S1.4-T12): Pushes directly to main, which is a protected
+# branch (Gitleaks status check + PR-required after T18). The built-in
+# GITHUB_TOKEN is rejected by branch protection (GH006). This workflow
+# requires a PAT (CONTRIBUTORS_PAT) with `contents: write` on this repo
+# AND admin-bypass on branch protection rules (or the PAT owner must be
+# included in the "bypass" list of the protected-branch ruleset).
+#
+# Provision (one-time, by repo admin):
+#   1. Create a fine-grained PAT scoped to nself-org/clawde with
+#      `contents:write` and `administration:read` permissions.
+#   2. gh secret set CONTRIBUTORS_PAT --repo nself-org/clawde --body "<token>"
+#   3. In branch protection rules for `main`, add the PAT owner (or the
+#      `github-actions[bot]` identity bound to this PAT) to the "Allow
+#      specified actors to bypass required pull requests" list.
+#
+# If CONTRIBUTORS_PAT is not configured, the commit step is skipped with a
+# warning rather than failing the workflow (avoids noisy red CI).
 
 name: Update Contributors
 
@@ -20,6 +38,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.CONTRIBUTORS_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Generate Contributors page
         run: |
@@ -42,7 +61,15 @@ jobs:
           echo "*Generated automatically on every merge to main.*" >> .github/wiki/Contributors.md
 
       - name: Commit Contributors page
+        env:
+          HAS_PAT: ${{ secrets.CONTRIBUTORS_PAT != '' }}
         run: |
+          if [ "$HAS_PAT" != "true" ]; then
+            echo "::warning::CONTRIBUTORS_PAT secret not configured. Skipping push."
+            echo "::warning::Branch protection on main rejects GITHUB_TOKEN (GH006)."
+            echo "::warning::See workflow header for provisioning steps."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/wiki/Contributors.md

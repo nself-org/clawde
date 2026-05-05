@@ -83,6 +83,28 @@ dev_dependencies:
   json_serializable: ^6.8.0
   riverpod_generator: ^2.6.1
 
+  # P99 S1.21 T2 — launcher icons standardization
+  flutter_launcher_icons: ^0.14.0
+
+# Launcher icons — generates platform icons from a single source PNG.
+# Standardized across nclaw / ntv / clawde apps. Source: brand canonical icon-1k.png (1024×1024).
+# Run: `dart run flutter_launcher_icons` to regenerate platform icons.
+flutter_launcher_icons:
+  ios: true
+  android: "launcher_icon"
+  image_path: "../../.github/wiki/brand/icons/icon-1k.png"
+  remove_alpha_ios: true
+  min_sdk_android: 24
+  adaptive_icon_background: "#030712"
+  adaptive_icon_foreground: "../../.github/wiki/brand/icons/icon-1k.png"
+  macos:
+    generate: true
+    image_path: "../../.github/wiki/brand/icons/icon-1k.png"
+  windows:
+    generate: true
+    image_path: "../../.github/wiki/brand/icons/icon-1k.png"
+    icon_size: 256
+
 flutter:
   generate: true
   uses-material-design: true
