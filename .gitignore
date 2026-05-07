@@ -1,6 +1,7 @@
 # AI agent directories (private — never commit)
 .claude/
 .codex/
+.ai/
 .cursor/
 .claw/
 .agents/
