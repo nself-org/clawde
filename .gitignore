@@ -121,3 +121,4 @@ docker-compose.override.yml
 .windsurf/
 .gemini/
 .codeium/
+.claude/

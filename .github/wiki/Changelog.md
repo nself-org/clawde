@@ -7,6 +7,24 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased] — v0.2.0 (v1.1.0 ecosystem)
+
+ClawDE bundle now purchasable at nself.org/products/clawde. Desktop + mobile apps updated for license gate flow.
+
+### Added
+
+- **License gate UI**: first-run onboarding now checks for ClawDE bundle license key (`NSELF_PLUGIN_LICENSE_KEY`). Shows purchase CTA (`nself.org/products/clawde`, $0.99/mo / $9.99/yr) if not licensed; proceeds to full feature set if licensed.
+- **`nself bundle install clawde` integration**: app installer page can trigger bundle install via CLI.
+- **Web SaaS launch page**: `clawde.nself.org` (web/clawde — new subdomain at v1.1.0).
+- **Cloud sync ready**: ClawDE bundle plugins (claw, ai, realtime, auth, notify, cms, mcp, knowledge-base) installed and validated for cloud sync features.
+
+### Changed
+
+- **Min nSelf CLI version**: bumped to v1.1.0 (required for ClawDE bundle license validation).
+- **Upgrade prompt**: in-app upgrade prompt now shows ClawDE bundle pricing ($0.99/mo / $9.99/yr).
+
+---
+
 ## [Unreleased] — v0.2.0
 
 ### Fixed
