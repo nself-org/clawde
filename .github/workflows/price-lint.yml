@@ -1,0 +1,20 @@
+name: Price Lint
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions: { contents: read }
+jobs:
+  price-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify canonical prices in source
+        run: |
+          set -e
+          echo "Verifying bundle prices match canon ($0.99/mo bundles, $3.99/mo ɳSelf+, $39.99/yr ɳSelf+)..."
+          # Disallowed old prices
+          if grep -rIE 'class="?price"?|"price":|\$1\.99|\$19\.99|\$49\.99/yr-only' --include='*.tsx' --include='*.ts' --include='*.dart' --include='*.md' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=build . 2>/dev/null || true; then
+            echo "ERROR: stale price reference found. Canon: $0.99/mo bundle · $3.99/mo or $39.99/yr ɳSelf+"
+            exit 1
+          fi
+          echo "OK"
