@@ -1,0 +1,52 @@
+name: Clean Working Tree
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  clean-working-tree:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for tracked .DS_Store files
+        run: |
+          if git ls-files | grep -q '\.DS_Store'; then
+            echo "ERROR: .DS_Store files are tracked in git. Run: git rm --cached \$(git ls-files | grep '.DS_Store')"
+            exit 1
+          fi
+
+      - name: Check for tracked .env secrets
+        run: |
+          # Allow .env.example, .env.template, .env.sample, .env.dev, .env.staging, .env.prod, .env.production
+          FORBIDDEN=$(git ls-files | grep -E '^\.env$|\.env\.local$|\.env\.secrets$' || true)
+          if [ -n "$FORBIDDEN" ]; then
+            echo "ERROR: Forbidden env files tracked: $FORBIDDEN"
+            exit 1
+          fi
+
+      - name: Check .gitignore has baseline patterns
+        run: |
+          if [ ! -f .gitignore ]; then
+            echo "ERROR: .gitignore is missing"
+            exit 1
+          fi
+          MISSING=""
+          grep -q '\.DS_Store' .gitignore || MISSING="$MISSING .DS_Store"
+          grep -q 'node_modules' .gitignore || grep -q 'vendor' .gitignore || true
+          if [ -n "$MISSING" ]; then
+            echo "WARNING: .gitignore may be missing patterns:$MISSING"
+          fi
+
+      - name: Check for root-level forbidden files
+        run: |
+          # Only README.md, LICENSE, .gitignore allowed as .md/.txt at root
+          FORBIDDEN=$(find . -maxdepth 1 -name "*.md" ! -name "README.md" -o -maxdepth 1 -name "CHANGELOG.md" -o -maxdepth 1 -name "CONTRIBUTING.md" -o -maxdepth 1 -name "CODE_OF_CONDUCT.md" -o -maxdepth 1 -name "SECURITY.md" 2>/dev/null | grep -v '^\./$' || true)
+          if [ -n "$FORBIDDEN" ]; then
+            echo "ERROR: Forbidden root-level .md files: $FORBIDDEN"
+            echo "Move to .github/wiki/ (public) or .github/docs/ (private)"
+            exit 1
+          fi
