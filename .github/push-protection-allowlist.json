@@ -1,0 +1,6 @@
+{
+  "$schema": "https://nself.org/schemas/push-protection-allowlist-v1.json",
+  "version": "1.0",
+  "_comment": "Push-protection bypass allowlist. Every entry MUST have security review + approval. Entries auto-expire 6 months after addition. See PPI .claude/docs/operations/push-protection-allowlist.md for canonical rules. Empty array = no bypasses configured. Ticket: P101 S8.T02.",
+  "entries": []
+}
