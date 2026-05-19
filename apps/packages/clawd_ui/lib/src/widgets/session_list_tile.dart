@@ -20,33 +20,36 @@ class SessionListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      selected: isSelected,
-      selectedTileColor: ClawdTheme.claw.withValues(alpha: 0.12),
-      onTap: onTap,
-      leading: _DoubleDot(status: session.status, tier: session.tier),
-      title: Text(
-        session.repoPath.split('/').last,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        session.repoPath,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 11),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // MI.T13 — model indicator chip (hidden when auto-routing)
-          if (session.modelOverride != null) ...[
-            ModelIndicator(modelOverride: session.modelOverride),
-            const SizedBox(width: 4),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        selected: isSelected,
+        selectedTileColor: ClawdTheme.claw.withValues(alpha: 0.12),
+        onTap: onTap,
+        leading: _DoubleDot(status: session.status, tier: session.tier),
+        title: Text(
+          session.repoPath.split('/').last,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          session.repoPath,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // MI.T13 — model indicator chip (hidden when auto-routing)
+            if (session.modelOverride != null) ...[
+              ModelIndicator(modelOverride: session.modelOverride),
+              const SizedBox(width: 4),
+            ],
+            ProviderBadge(provider: session.provider),
           ],
-          ProviderBadge(provider: session.provider),
-        ],
+        ),
       ),
     );
   }
