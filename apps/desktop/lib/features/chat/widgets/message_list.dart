@@ -203,7 +203,7 @@ class _MessageListState extends ConsumerState<MessageList> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: items.length,
               // Keep 1500px of items pre-rendered above/below viewport.
-              scrollCacheExtent: 1500,
+              scrollCacheExtent: const ScrollCacheExtent.fixed(1500),
               // Disable automatic keepAlives: messages are stateless,
               // no need to retain widget state when scrolled off-screen.
               addAutomaticKeepAlives: false,

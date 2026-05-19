@@ -160,7 +160,7 @@ jobs:
           ./target/release/clawd serve --data-dir "$CLAWD_DATA_DIR" --port 14300 &
           CLAWD_PID=$!
           sleep 2
-          ./target/release/clawd policy test --ci --port 14300
+          ./target/release/clawd --data-dir "$CLAWD_DATA_DIR" policy test --ci --port 14300
           STATUS=$?
           kill $CLAWD_PID 2>/dev/null || true
           exit $STATUS
@@ -204,7 +204,7 @@ jobs:
           CLAWD_PID=$!
           sleep 2
           BASE_REF="${{ github.event.pull_request.base.sha }}"
-          ./target/release/clawd bench compare --base "$BASE_REF" --port 14301
+          ./target/release/clawd --data-dir "$CLAWD_DATA_DIR" bench compare --base "$BASE_REF" --port 14301
           STATUS=$?
           kill $CLAWD_PID 2>/dev/null || true
           exit $STATUS
