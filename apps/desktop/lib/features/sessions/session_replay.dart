@@ -196,7 +196,7 @@ class _SessionReplayScreenState extends ConsumerState<SessionReplayScreen> {
                 }
                 return ListView.builder(
                   itemCount: messages.length,
-                  cacheExtent: 500,
+                  scrollCacheExtent: const ScrollCacheExtent.pixels(500),
                   itemBuilder: (context, i) {
                     final msg = messages[i];
                     final isUser = msg['role'] == 'user';

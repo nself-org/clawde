@@ -167,7 +167,10 @@ jobs:
         working-directory: apps/daemon
 
       - name: Run policy + snapshot unit tests (IL.T04)
-        run: cargo test --lib instructions snapshot policy
+        run: |
+          cargo test --lib -- instructions
+          cargo test --lib -- snapshot
+          cargo test --lib -- policy
         working-directory: apps/daemon
 
   # ─── Sprint ZZ: Benchmark regression gate (EH.T06) ───────────────
@@ -204,7 +207,7 @@ jobs:
           CLAWD_PID=$!
           sleep 2
           BASE_REF="${{ github.event.pull_request.base.sha }}"
-          ./target/release/clawd --data-dir "$CLAWD_DATA_DIR" bench compare --base "$BASE_REF" --port 14301
+          ./target/release/clawd --data-dir "$CLAWD_DATA_DIR" bench compare --base-ref "$BASE_REF" --port 14301
           STATUS=$?
           kill $CLAWD_PID 2>/dev/null || true
           exit $STATUS
