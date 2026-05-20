@@ -39,9 +39,23 @@ jobs:
       # SSL.com eSigner EV code-signing (no-op until SSL_COM_USERNAME org secret is set).
       # Signs the Flutter Windows runner executable (PE format, supported by eSigner).
       # Rate limit: 10 signs/min. One exe per tag run = well within limit.
-      # Note: the 'secrets' context is valid here; VS Code linter false-positive on step-level if:.
+      # GitHub Actions does NOT allow the `secrets` context in step-level `if:` expressions
+      # (causes the workflow to fail to parse → 0-job runs on every push). Workaround:
+      # surface the secret presence as a prior step output, then gate via `steps.*.outputs`.
+      - name: Detect SSL.com signing availability
+        id: signcheck
+        shell: bash
+        env:
+          SSL_COM_USERNAME: ${{ secrets.SSL_COM_USERNAME }}
+        run: |
+          if [ -n "$SSL_COM_USERNAME" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Sign Windows exe (EV, SSL.com eSigner)
-        if: ${{ secrets.SSL_COM_USERNAME != '' }}
+        if: steps.signcheck.outputs.available == 'true'
         uses: SSLcom/esigner-codesign@v1.3.2
         with:
           command: sign
