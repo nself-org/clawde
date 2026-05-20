@@ -9,7 +9,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  gitleaks:
+  Gitleaks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
