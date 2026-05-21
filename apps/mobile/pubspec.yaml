@@ -1,7 +1,7 @@
 name: clawde_mobile
 description: ClawDE — AI developer environment companion app (iOS + Android).
 publish_to: "none"
-version: 0.3.1+4
+version: 0.3.2+5
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
