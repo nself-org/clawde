@@ -3,6 +3,11 @@
 All notable changes to ClawDE are documented here.
 Follows [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [0.3.2] - 2026-05-21
+
+### Changed
+- Patch release (P103). Desktop and mobile apps bumped 0.3.1 → 0.3.2.
+
 ## [1.0.9] - 2026-04-18
 
 ### Added

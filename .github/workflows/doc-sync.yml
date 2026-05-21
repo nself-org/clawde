@@ -100,8 +100,8 @@ jobs:
 
           # Versions
           if matches '(^cli/VERSION$|pubspec\.yaml$|homebrew-nself/.*\.rb$|plugins-pro/VERSION$|^Cargo\.toml$)'; then
-            if ! matches '(\.claude/docs/MASTER-VERSIONS\.md|\.claude/docs/sport/F01-MASTER-VERSIONS\.md|web/org/content/changelog|homebrew-nself/Formula/)'; then
-              rows="${rows}- version files changed without MASTER-VERSIONS.md or F01 update\n"
+            if ! matches '(\.claude/docs/MASTER-VERSIONS\.md|\.claude/docs/sport/F01-MASTER-VERSIONS\.md|web/org/content/changelog|homebrew-nself/Formula/|apps/VERSIONING\.md|apps/CHANGELOG\.md)'; then
+              rows="${rows}- version files changed without MASTER-VERSIONS.md, F01, or apps/VERSIONING.md update\n"
               missing=1
             fi
           fi
