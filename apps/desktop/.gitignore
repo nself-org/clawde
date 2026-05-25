@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+
+# Tauri build output
+src-tauri/target/
+src-tauri/gen/
+
+# Flutter remnants (build artifacts and platform runners, not tracked)
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+linux/
+macos/
+windows/
+
+# macOS
+.DS_Store
+
+# Vite
+vite.config.ts.timestamp-*
