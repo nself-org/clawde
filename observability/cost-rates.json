@@ -1,0 +1,22 @@
+{
+  "_comment": "Per-model token cost rates. LEDGER §G SOURCE PINNED: rates from Anthropic pricing page as of 2026-05-29 (https://www.anthropic.com/pricing). Unit: USD per 1,000 tokens. text-embedding-3-small rate from OpenAI pricing page 2026-05-29.",
+  "_source_date": "2026-05-29",
+  "claude-sonnet-4-6": {
+    "input": 0.003,
+    "output": 0.015,
+    "cache_read": 0.0003,
+    "cache_write": 0.00375
+  },
+  "claude-haiku-4-5": {
+    "input": 0.0008,
+    "output": 0.004,
+    "cache_read": 0.00008,
+    "cache_write": 0.001
+  },
+  "text-embedding-3-small": {
+    "input": 0.00002,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0
+  }
+}
