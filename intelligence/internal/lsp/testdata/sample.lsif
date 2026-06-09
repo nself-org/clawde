@@ -1,0 +1,16 @@
+{"id":1,"type":"vertex","label":"metaData","version":"0.4.0","projectRoot":"file:///workspace"}
+{"id":2,"type":"vertex","label":"project","kind":"go"}
+{"id":3,"type":"vertex","label":"document","uri":"file:///workspace/main.go","languageId":"go","contents":""}
+{"id":4,"type":"vertex","label":"document","uri":"file:///workspace/util.go","languageId":"go","contents":""}
+{"id":5,"type":"vertex","label":"range","start":{"line":5,"character":0},"end":{"line":5,"character":8}}
+{"id":6,"type":"vertex","label":"range","start":{"line":12,"character":4},"end":{"line":12,"character":12}}
+{"id":7,"type":"vertex","label":"resultSet"}
+{"id":8,"type":"vertex","label":"definitionResult"}
+{"id":9,"type":"vertex","label":"referenceResult"}
+{"id":10,"type":"edge","label":"next","outV":5,"inV":7}
+{"id":11,"type":"edge","label":"textDocument/definition","outV":7,"inV":8}
+{"id":12,"type":"edge","label":"item","outV":8,"inVs":[6],"document":4,"property":"definitions"}
+{"id":13,"type":"edge","label":"textDocument/references","outV":7,"inV":9}
+{"id":14,"type":"edge","label":"item","outV":9,"inVs":[5],"document":3,"property":"references"}
+{"id":15,"type":"edge","label":"contains","outV":3,"inVs":[5]}
+{"id":16,"type":"edge","label":"contains","outV":4,"inVs":[6]}

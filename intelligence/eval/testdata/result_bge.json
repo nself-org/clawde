@@ -1,0 +1,6 @@
+{
+  "provider": "bge-m3",
+  "recall_at_10": 0.88,
+  "p95_ms": 110,
+  "composite_score": 0.74
+}

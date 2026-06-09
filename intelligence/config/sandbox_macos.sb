@@ -1,0 +1,64 @@
+; sandbox_macos.sb — macOS Seatbelt profile for ClawDE sandboxed tool execution.
+;
+; Purpose: Deny network access and filesystem writes outside /tmp and workspace.
+;          This is a development-only sandbox profile used by sandbox-exec(1).
+;          Production uses Linux seccomp or gVisor.
+;
+; Usage: sandbox-exec -f config/sandbox_macos.sb <command> [args...]
+;
+; Constraints: deny network (outbound + inbound), deny file-write/unlink outside
+;              /tmp and /var/folders (macOS temp). Allow read-only access everywhere.
+;
+; Reference: sandbox-exec(1), Seatbelt API, TN2127.
+
+(version 1)
+
+; Default: deny everything not explicitly permitted.
+(deny default)
+
+; Allow process execution (needed to run the command itself).
+(allow process-exec)
+(allow process-fork)
+
+; Allow POSIX signals to the process itself.
+(allow signal (target self))
+
+; Allow read-only filesystem access (needed to read binaries, libraries, etc.).
+(allow file-read*)
+
+; Allow writes ONLY inside /tmp and macOS temp directories.
+(allow file-write*
+  (subpath "/tmp")
+  (subpath "/var/folders")
+  (subpath "/private/tmp")
+  (subpath "/private/var/folders"))
+
+; Allow file-ioctl (needed for PTY and pipe operations).
+(allow file-ioctl)
+
+; Allow mmap of files (needed for dynamic linker and shared libraries).
+(allow file-map-executable)
+
+; Allow POSIX IPC (pipes, shared memory for subprocess communication).
+(allow ipc-posix-sem)
+(allow ipc-posix-shm*)
+(allow ipc-sysv-sem)
+(allow ipc-sysv-shm)
+
+; Allow system calls needed by the Go runtime.
+(allow system-socket (socket-domain AF_UNIX))
+
+; Deny all network access — no outbound or inbound TCP/UDP.
+; (network* is denied by the default deny at the top.)
+
+; Allow sysctl reads (needed by Go runtime for CPU count, etc.).
+(allow sysctl-read)
+
+; Allow Mach IPC to the kernel (needed by Go runtime).
+(allow mach-lookup
+  (global-name "com.apple.system.opendirectoryd.api")
+  (global-name "com.apple.security.syspolicy")
+  (global-name "com.apple.SecurityServer"))
+
+; Allow reads of system time.
+(allow iokit-open)

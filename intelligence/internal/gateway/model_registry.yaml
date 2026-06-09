@@ -1,0 +1,273 @@
+# model_registry.yaml — LLM provider and model configuration for clawde-intelligence.
+#
+# RULES:
+#   - api_key_ref is a vault.env variable NAME only — never a raw key value.
+#   - All model name strings live here, never in .go files.
+#   - project_id is required for Gemini (quota is per GCP project, not per key).
+#   - vLLM base_url MUST use 127.0.0.1 (not 0.0.0.0 or localhost) per ADR-001.
+#   - Ports canonical (ADR-001): gRPC=8090, REST=8091, TEI-embed=8080, reranker=8092, vLLM=8093.
+#
+# Lanes: fast | deep | multimodal | embedding | rerank | live | local
+
+version: 1
+
+lanes:
+  # ── FAST lane: low-latency completions ──────────────────────────────────────
+  - lane: fast
+    entries:
+      - provider: anthropic
+        model: claude-haiku-4-5
+        api_key_ref: ANTHROPIC_API_KEY
+        cost_per_1k_tokens: 0.00025
+        context_window_tokens: 200000
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 4000
+          rpd: 80000
+          window_seconds: 60
+        p99_latency_ms: 300
+
+      - provider: openai
+        base_url: https://api.openai.com/v1
+        model: gpt-4o-mini
+        api_key_ref: OPENAI_API_KEY
+        cost_per_1k_tokens: 0.00015
+        context_window_tokens: 128000
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 3500
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 350
+
+      # vLLM fallback position 3 in FAST lane — zero-cost GPU inference when available.
+      # Falls back to anthropic/openai above when vLLM is unreachable (2s timeout via HealthCheck).
+      # base_url: host only — NewVLLMProvider appends /v1. M6: MUST be 127.0.0.1.
+      - provider: vllm
+        base_url: http://127.0.0.1:8093
+        model: Qwen/Qwen2.5-Coder-32B-Instruct
+        api_key_ref: ""   # optional; set VLLM_API_KEY if vLLM is auth-gated
+        cost_per_1k_tokens: 0.0
+        context_window_tokens: 32768
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 0
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 800
+
+  # ── DEEP lane: extended reasoning, large context ─────────────────────────────
+  - lane: deep
+    entries:
+      # vLLM is PRIMARY for DEEP lane — zero-cost GPU inference for local extended reasoning.
+      # Falls back to anthropic/gemini below within 2s when vLLM is unreachable.
+      # M6: base_url MUST be 127.0.0.1 (port 8093). NewVLLMProvider appends /v1.
+      - provider: vllm
+        base_url: http://127.0.0.1:8093
+        model: Qwen/Qwen2.5-Coder-32B-Instruct
+        api_key_ref: ""   # optional; set VLLM_API_KEY if vLLM is auth-gated
+        cost_per_1k_tokens: 0.0
+        context_window_tokens: 32768
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 0
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 1000
+
+      - provider: anthropic
+        model: claude-opus-4-5
+        api_key_ref: ANTHROPIC_API_KEY
+        cost_per_1k_tokens: 0.015
+        context_window_tokens: 200000
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 1000
+          rpd: 20000
+          window_seconds: 60
+        p99_latency_ms: 2000
+
+      - provider: gemini
+        base_url: https://generativelanguage.googleapis.com/v1beta/openai
+        model: gemini-1.5-pro-latest
+        api_key_ref: GEMINI_API_KEY
+        project_id: openclaw-io
+        cost_per_1k_tokens: 0.007
+        context_window_tokens: 1000000
+        streaming_supported: true
+        multimodal: true
+        rate_limit:
+          rpm: 360
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 3000
+
+  # ── MULTIMODAL lane: vision + text ──────────────────────────────────────────
+  - lane: multimodal
+    entries:
+      - provider: anthropic
+        model: claude-opus-4-5
+        api_key_ref: ANTHROPIC_API_KEY
+        cost_per_1k_tokens: 0.015
+        context_window_tokens: 200000
+        streaming_supported: true
+        multimodal: true
+        rate_limit:
+          rpm: 1000
+          rpd: 20000
+          window_seconds: 60
+        p99_latency_ms: 2500
+
+      - provider: gemini
+        base_url: https://generativelanguage.googleapis.com/v1beta/openai
+        model: gemini-2.5-flash-preview-05-20
+        api_key_ref: GEMINI_API_KEY
+        project_id: openclaw-io
+        cost_per_1k_tokens: 0.001
+        context_window_tokens: 1000000
+        streaming_supported: true
+        multimodal: true
+        rate_limit:
+          rpm: 1000
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 1500
+
+      # gemini-vision entries: direct generateContent REST API (not openai-compat path)
+      # so inline image bytes can be included. Reuses gcp_project_pool (ADR-006).
+      # Text part is placed LAST in every request per GeminiVisionProvider invariant.
+      - provider: gemini-vision
+        base_url: https://generativelanguage.googleapis.com/v1beta
+        model: gemini-1.5-pro-vision
+        api_key_ref: GEMINI_API_KEY
+        project_id: openclaw-io
+        cost_per_1k_tokens: 0.007
+        context_window_tokens: 1000000
+        streaming_supported: false
+        multimodal: true
+        rate_limit:
+          rpm: 360
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 3500
+
+      - provider: gemini-vision
+        base_url: https://generativelanguage.googleapis.com/v1beta
+        model: gemini-2.0-flash-vision
+        api_key_ref: GEMINI_API_KEY
+        project_id: openclaw-io
+        cost_per_1k_tokens: 0.001
+        context_window_tokens: 1000000
+        streaming_supported: false
+        multimodal: true
+        rate_limit:
+          rpm: 1000
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 1500
+
+  # ── EMBEDDING lane: text → vector (TEI sidecar at :8080, BGE-M3 1024-dim) ──
+  - lane: embedding
+    entries:
+      - provider: tei-embed
+        base_url: http://127.0.0.1:8080/v1
+        model: BAAI/bge-m3
+        api_key_ref: ""   # no auth for local TEI
+        cost_per_1k_tokens: 0.0
+        context_window_tokens: 8192
+        streaming_supported: false
+        multimodal: false
+        rate_limit:
+          rpm: 10000
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 50
+
+      - provider: gemini
+        base_url: https://generativelanguage.googleapis.com/v1beta/openai
+        model: text-embedding-004
+        api_key_ref: GEMINI_API_KEY
+        project_id: openclaw-io
+        cost_per_1k_tokens: 0.0001
+        context_window_tokens: 2048
+        streaming_supported: false
+        multimodal: false
+        rate_limit:
+          rpm: 1500
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 200
+
+  # ── RERANK lane: cross-encoder scoring (TEI reranker sidecar at :8092) ──────
+  - lane: rerank
+    entries:
+      - provider: tei-rerank
+        base_url: http://127.0.0.1:8092/v1
+        model: BAAI/bge-reranker-v2-m3
+        api_key_ref: ""   # no auth for local TEI
+        cost_per_1k_tokens: 0.0
+        context_window_tokens: 4096
+        streaming_supported: false
+        multimodal: false
+        rate_limit:
+          rpm: 5000
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 100
+
+  # ── LIVE lane: real-time streaming completions ───────────────────────────────
+  - lane: live
+    entries:
+      - provider: anthropic
+        model: claude-sonnet-4-6
+        api_key_ref: ANTHROPIC_API_KEY
+        cost_per_1k_tokens: 0.003
+        context_window_tokens: 200000
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 2000
+          rpd: 50000
+          window_seconds: 60
+        p99_latency_ms: 600
+
+  # ── LOCAL lane: Ollama or vLLM on 127.0.0.1 ─────────────────────────────────
+  - lane: local
+    entries:
+      - provider: vllm
+        # vLLM MUST bind 127.0.0.1 per ADR-001 (port 8093)
+        base_url: http://127.0.0.1:8093/v1
+        model: Qwen/Qwen2.5-Coder-32B-Instruct
+        api_key_ref: ""   # no auth for local vLLM
+        cost_per_1k_tokens: 0.0
+        context_window_tokens: 32768
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 0
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 1000
+
+      - provider: ollama
+        # OLLAMA_HOST default http://127.0.0.1:11434 (NewOllamaProvider normalizes /v1).
+        # Ollama uses the OpenAI-compat /v1/chat/completions path per LEDGER §G.
+        # Registry models are prefixed "ollama/"; the prefix is stripped before
+        # talking to the daemon (Ollama expects bare names like "qwen2.5-coder:32b").
+        base_url: http://127.0.0.1:11434/v1
+        model: ollama/qwen2.5-coder:32b
+        api_key_ref: ""   # no auth for local Ollama
+        cost_per_1k_tokens: 0.0
+        context_window_tokens: 32768
+        streaming_supported: true
+        multimodal: false
+        rate_limit:
+          rpm: 0
+          rpd: 0
+          window_seconds: 60
+        p99_latency_ms: 2000

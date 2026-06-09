@@ -1,0 +1,197 @@
+// gateway.proto — GatewayService definition for clawde-intelligence.
+//
+// Purpose: Defines the gRPC surface (Complete, StreamComplete, Embed, Rerank,
+//          Health) with grpc-gateway HTTP annotations for the REST mux on 8091.
+// Ports:   gRPC 127.0.0.1:8090 | REST 127.0.0.1:8091
+// Auth:    HMAC-SHA256 on all RPCs except /health (see internal/server/auth.go)
+// SPORT:   REGISTRY-ENDPOINTS.md / REGISTRY-SERVICES.md
+//
+// NOTE: protoc-gen-go, protoc-gen-go-grpc, and protoc-gen-grpc-gateway are NOT
+// installed in this environment. The generated Go stubs live in
+// internal/server/gateway_grpc_gen.go (hand-written equivalents).
+// Run `make proto` once those tools are installed to regenerate.
+
+syntax = "proto3";
+
+package gateway.v1;
+
+option go_package = "github.com/nself-org/clawde/intelligence/internal/server";
+
+import "google/api/annotations.proto";
+
+// ----- Request / Response messages -----
+
+message CompleteRequest {
+  string lane         = 1;
+  repeated Message messages = 2;
+  string system_prompt = 3;
+  int32  max_tokens   = 4;
+  string workspace_id = 5;
+  string request_id   = 6;
+  // Fields 7-9 reserved for future use.
+  // Multimodal fields (MULTIMODAL lane — W16-S16-T03):
+  repeated bytes images     = 10; // raw image bytes; max 5 images, max 10MB each
+  string image_mime_type    = 11; // shared MIME for all images: image/png|jpeg|gif|webp
+}
+
+message Message {
+  string role    = 1;
+  string content = 2;
+}
+
+message CompleteResponse {
+  string content        = 1;
+  int32  input_tokens   = 2;
+  int32  output_tokens  = 3;
+  bool   enriched       = 4;
+  string provider       = 5;
+  string model          = 6;
+}
+
+message StreamCompleteRequest {
+  string lane         = 1;
+  repeated Message messages = 2;
+  string system_prompt = 3;
+  int32  max_tokens   = 4;
+  string workspace_id = 5;
+  string request_id   = 6;
+}
+
+message StreamChunk {
+  string delta = 1;
+  bool   done  = 2;
+  GatewayError error = 3;
+}
+
+message EmbedRequest {
+  string text         = 1;
+  int32  expected_dim = 2;
+  string workspace_id = 3;
+  string request_id   = 4;
+}
+
+message EmbedResponse {
+  repeated float embedding = 1;
+  string provider          = 2;
+  string model             = 3;
+}
+
+message RerankRequest {
+  string query        = 1;
+  repeated string documents = 2;
+  int32  top_n        = 3;
+  string workspace_id = 4;
+  string request_id   = 5;
+}
+
+message RerankResponse {
+  repeated int32 ranked_indices = 1;
+  string provider               = 2;
+  string model                  = 3;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  repeated ProviderHealth providers = 2;
+}
+
+message ProviderHealth {
+  string name       = 1;
+  bool   healthy    = 2;
+  int64  latency_ms = 3;
+}
+
+message GatewayError {
+  string code          = 1;
+  string message       = 2;
+  string provider_error = 3;
+  int64  retry_after   = 4;
+}
+
+message CompileContextRequest {
+  string workspace_id        = 1;
+  SessionSignals signals     = 2;
+}
+
+message SessionSignals {
+  string active_file_path         = 1;
+  repeated string visible_symbols = 2;
+  string recent_diff              = 3;
+  string last_error               = 4;
+}
+
+message CompileContextResponse {
+  string context_block = 1;
+  bool   enriched      = 2;
+  int32  token_count   = 3;
+  bool   cache_hit     = 4;
+}
+
+// ----- Service -----
+
+service GatewayService {
+  rpc Complete (CompleteRequest) returns (CompleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/gateway/complete"
+      body: "*"
+    };
+  }
+
+  rpc StreamComplete (StreamCompleteRequest) returns (stream StreamChunk) {
+    option (google.api.http) = {
+      post: "/v1/gateway/stream"
+      body: "*"
+    };
+  }
+
+  rpc Embed (EmbedRequest) returns (EmbedResponse) {
+    option (google.api.http) = {
+      post: "/v1/gateway/embed"
+      body: "*"
+    };
+  }
+
+  rpc Rerank (RerankRequest) returns (RerankResponse) {
+    option (google.api.http) = {
+      post: "/v1/gateway/rerank"
+      body: "*"
+    };
+  }
+
+  rpc Health (HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/gateway/health"
+    };
+  }
+
+  rpc CompileContext (CompileContextRequest) returns (CompileContextResponse) {
+    option (google.api.http) = {
+      post: "/v1/gateway/compile_context"
+      body: "*"
+    };
+  }
+
+  // IngestDocURL fetches an external documentation URL, chunks it, and enqueues
+  // the chunks to clawde_embed_queue tagged with doc_type. Gated by the ADR-003
+  // dispatch chain (auth → trust → policy → supply-chain).
+  rpc IngestDocURL (IngestDocURLRequest) returns (IngestDocURLResponse) {
+    option (google.api.http) = {
+      post: "/v1/gateway/ingest_doc_url"
+      body: "*"
+    };
+  }
+}
+
+message IngestDocURLRequest {
+  string workspace_id = 1;
+  string url          = 2;
+  string doc_type     = 3; // code | markdown | docstring | comment (default markdown)
+}
+
+message IngestDocURLResponse {
+  int32  chunks_enqueued = 1;
+  bool   skipped         = 2;
+  string reason          = 3;
+}
