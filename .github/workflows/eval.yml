@@ -1,0 +1,115 @@
+# Purpose: Offline eval regression gate for nClaw semantic retrieval and AI gateway MCP tool quality.
+# Triggers on changes to retrieval implementation or MCP tool surface.
+# Compares current metric run against evaluation/baseline.json.
+# LEDGER §A baseline-null rule: if baseline.json has null metrics (first run), populates baseline and exits 0.
+# Fails if any metric drops >5% from baseline.
+# SPORT: F-MASTER.md F-AI-GATEWAY:observability-evals
+#
+# Pass thresholds: MRR >= 0.75, NDCG@10 >= 0.70, P@5 >= 0.65
+
+name: Retrieval Eval Regression Gate
+
+on:
+  push:
+    paths:
+      - "nclaw/core/retrieval/**"
+      - "plugins-pro/paid/nself-ai-mcp/**"
+  pull_request:
+    paths:
+      - "nclaw/core/retrieval/**"
+      - "plugins-pro/paid/nself-ai-mcp/**"
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "Dataset type to evaluate (semantic|keyword|hybrid)"
+        required: false
+        default: "hybrid"
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval-regression:
+    name: Eval Regression Gate (${{ github.event.inputs.dataset || 'hybrid' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+        continue-on-error: false
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        working-directory: clawde
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate dataset JSONL files
+        working-directory: clawde
+        run: |
+          if [ -f evaluation/validate-datasets.ts ]; then
+            npx tsx evaluation/validate-datasets.ts
+          else
+            echo "validate-datasets.ts not found — skipping dataset validation"
+            exit 1
+          fi
+
+      - name: Determine dataset path
+        id: dataset
+        run: |
+          DATASET_TYPE="${{ github.event.inputs.dataset || 'hybrid' }}"
+          echo "type=${DATASET_TYPE}" >> "$GITHUB_OUTPUT"
+          echo "path=clawde/evaluation/datasets/${DATASET_TYPE}.jsonl" >> "$GITHUB_OUTPUT"
+
+      - name: Run offline eval harness
+        working-directory: clawde
+        run: |
+          chmod +x evaluation/run_eval.sh
+          evaluation/run_eval.sh \
+            --dataset "evaluation/datasets/${{ steps.dataset.outputs.type }}.jsonl" \
+            --model "claude-haiku-4-5" \
+            --top-k 10 \
+            --output "/tmp/eval-report-${{ steps.dataset.outputs.type }}.json"
+
+      - name: Upload eval report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ steps.dataset.outputs.type }}-${{ github.sha }}
+          path: /tmp/eval-report-${{ steps.dataset.outputs.type }}.json
+          retention-days: 30
+
+      - name: Display eval results
+        if: always()
+        run: |
+          echo "=== Eval Results ==="
+          cat /tmp/eval-report-${{ steps.dataset.outputs.type }}.json | \
+            python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d.get('aggregate',{}), indent=2))"
+          echo "=== Failures ==="
+          cat /tmp/eval-report-${{ steps.dataset.outputs.type }}.json | \
+            python3 -c "import json,sys; d=json.load(sys.stdin); [print(f) for f in d.get('failures',[])]"
+
+      - name: Commit updated baseline (first-run only)
+        if: >
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main'
+        run: |
+          REPORT="/tmp/eval-report-${{ steps.dataset.outputs.type }}.json"
+          BASELINE_POPULATED=$(python3 -c "import json; d=json.load(open('$REPORT')); print(str(d.get('baseline_populated', False)).lower())")
+          if [ "$BASELINE_POPULATED" = "true" ]; then
+            echo "Baseline populated on first run — committing baseline.json"
+            git config user.name "nSelf CI"
+            git config user.email "ci@nself.org"
+            git add clawde/evaluation/baseline.json
+            git commit -m "ci: populate eval baseline.json from first run [skip ci]" || echo "Nothing to commit"
+            git push || echo "Push failed (expected if branch protection requires PR)"
+          fi
