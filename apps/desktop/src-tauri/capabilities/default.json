@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "default",
+  "description": "Default capabilities for ClawDE desktop",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-execute",
+    "shell:allow-open",
+    "fs:allow-read-all",
+    "fs:allow-write-all",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-pick-folders",
+    "notification:allow-request-permission",
+    "notification:allow-send-notification",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "process:allow-restart",
+    "process:allow-exit",
+    "deep-link:allow-register",
+    "os:allow-platform",
+    "os:allow-version",
+    "window-state:allow-restore-state",
+    "window-state:allow-save-window-state"
+  ]
+}

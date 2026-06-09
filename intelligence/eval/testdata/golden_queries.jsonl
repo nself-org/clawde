@@ -1,0 +1,32 @@
+{"query":"What does nself.NewBM25Kernel do and what parameters does it take?","relevant_chunk_ids":["chunk-bm25-kernel-constructor","chunk-retrieval-kernel"],"language":"go","category":"symbol_lookup"}
+{"query":"How does the tsvector BM25 lane fall back when ParadeDB is unavailable?","relevant_chunk_ids":["chunk-bm25-fallback","chunk-kernel-querywithfallback"],"language":"go","category":"bug_context"}
+{"query":"Show me an example of installing an nself plugin with a license key","relevant_chunk_ids":["chunk-plugin-install-example","chunk-license-set-cmd"],"language":"go","category":"usage_example"}
+{"query":"What environment variables does the nself CLI require at startup?","relevant_chunk_ids":["chunk-env-var-list","chunk-nself-config-loader"],"language":"go","category":"symbol_lookup"}
+{"query":"How does nself build generate the docker-compose.yml file?","relevant_chunk_ids":["chunk-build-cmd","chunk-compose-generator"],"language":"go","category":"usage_example"}
+{"query":"Explain the workspace_id RLS policy on clawde_chunks","relevant_chunk_ids":["chunk-rls-policy-chunks","chunk-rls-migration-0085"],"language":"go","category":"bug_context"}
+{"query":"How does the gateway route embedding requests to TEI versus Gemini?","relevant_chunk_ids":["chunk-gateway-router","chunk-lane-embedding"],"language":"go","category":"symbol_lookup"}
+{"query":"What is the canonical vector dimension for BGE-M3 embeddings?","relevant_chunk_ids":["chunk-adr-005","chunk-bge-m3-dim"],"language":"go","category":"symbol_lookup"}
+{"query":"How do I run the eval smoke test without a live database?","relevant_chunk_ids":["chunk-make-eval-smoke","chunk-eval-runner-smokelimit"],"language":"go","category":"usage_example"}
+{"query":"What columns does clawde_eval_runs have after migration 0089?","relevant_chunk_ids":["chunk-migration-0089","chunk-eval-runs-schema"],"language":"go","category":"symbol_lookup"}
+{"query":"How does the A/B log writer serialize top-10 results to JSONB?","relevant_chunk_ids":["chunk-pgx-ablogwriter","chunk-ablogrow-json"],"language":"go","category":"bug_context"}
+{"query":"Show me the LaneResult struct and its fields","relevant_chunk_ids":["chunk-laneresult-struct","chunk-lanes-bm25"],"language":"go","category":"symbol_lookup"}
+{"query":"How does nself start configure the Nginx reverse proxy?","relevant_chunk_ids":["chunk-nself-start-nginx","chunk-nginx-template"],"language":"go","category":"usage_example"}
+{"query":"What is the TTL enforcement mechanism for clawde_chunks rows?","relevant_chunk_ids":["chunk-ttl-cron-0085","chunk-pgcron-chunks-ttl"],"language":"go","category":"bug_context"}
+{"query":"Explain the GatewayError type and its fields","relevant_chunk_ids":["chunk-gateway-error","chunk-gateway-unwrap"],"language":"go","category":"symbol_lookup"}
+{"query":"How does the retrieval kernel decide between BM25Enabled and BM25ABMode?","relevant_chunk_ids":["chunk-kernel-query-routing","chunk-bm25-abmode-flag"],"language":"go","category":"bug_context"}
+{"query":"What is the nself plugin bundle for ɳClaw and which plugins does it include?","relevant_chunk_ids":["chunk-nclaw-bundle","chunk-f06-bundle-inventory"],"language":"go","category":"symbol_lookup"}
+{"query":"How do I add a custom service to the nself stack using the CS_N mechanism?","relevant_chunk_ids":["chunk-custom-service-cs1","chunk-env-cs-n"],"language":"go","category":"usage_example"}
+{"query":"How does the eval recorder write mrr_at_10 to Postgres?","relevant_chunk_ids":["chunk-recorder-insert","chunk-mrr-at-10-column"],"language":"go","category":"symbol_lookup"}
+{"query":"What is the tie-break rule between BGE-M3 and Gemini text-embedding-004?","relevant_chunk_ids":["chunk-adr-006-tiebreak","chunk-eval-methodology"],"language":"go","category":"bug_context"}
+{"query":"How does the repointel extractor parse Go symbols via tree-sitter?","relevant_chunk_ids":["chunk-extractor-treesitter","chunk-repointel-go"],"language":"go","category":"symbol_lookup"}
+{"query":"Show me how to register a new gateway provider in the registry","relevant_chunk_ids":["chunk-gateway-registry","chunk-provider-register"],"language":"go","category":"usage_example"}
+{"query":"What pgx DBQuerier methods does the A/B lane log writer use?","relevant_chunk_ids":["chunk-dbquerier-interface","chunk-lanes-dbquerier"],"language":"go","category":"symbol_lookup"}
+{"query":"How does the Gemini pool rotate between API keys to avoid rate limits?","relevant_chunk_ids":["chunk-gemini-pool","chunk-key-rotation"],"language":"go","category":"bug_context"}
+{"query":"What health checks does the intelligence server expose on /healthz?","relevant_chunk_ids":["chunk-health-handler","chunk-server-healthz"],"language":"go","category":"symbol_lookup"}
+{"query":"How do I configure nself for a staging versus production environment?","relevant_chunk_ids":["chunk-env-cascade","chunk-env-staging-prod"],"language":"go","category":"usage_example"}
+{"query":"Describe the structure of the golden_queries.jsonl evaluation dataset","relevant_chunk_ids":["chunk-golden-query-struct","chunk-dataset-jsonl"],"language":"go","category":"symbol_lookup"}
+{"query":"What does the LaneRequest ExpectedDim field control for embeddings?","relevant_chunk_ids":["chunk-lanerequest-expecteddim","chunk-embed-dim-contract"],"language":"go","category":"symbol_lookup"}
+{"query":"How does nself doctor verify that the plugin license key is valid?","relevant_chunk_ids":["chunk-doctor-license-check","chunk-ping-api-validate"],"language":"go","category":"bug_context"}
+{"query":"How does the ParadeDB lane handle the absence of the pg_bm25 extension?","relevant_chunk_ids":["chunk-paradedb-lane-guard","chunk-bm25-extension-check"],"language":"go","category":"bug_context"}
+{"query":"What columns does clawde_lane_ab_log store for comparing BM25 lanes?","relevant_chunk_ids":["chunk-ab-log-schema-0087","chunk-ablogrow-fields"],"language":"go","category":"symbol_lookup"}
+{"query":"Show me how the eval CLI --provider flag selects BGE-M3 vs Gemini","relevant_chunk_ids":["chunk-eval-cmd-flags","chunk-run-eval-provider"],"language":"go","category":"usage_example"}

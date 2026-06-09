@@ -102,9 +102,9 @@ impl ProcessPool {
                 "replenishing process pool (ready={ready}, target={})",
                 self.target_size
             );
-            // In a real implementation, this spawns a CLI process and SIGSTOP's it.
-            // For now, this is a stub — full implementation requires provider integration.
-            // TODO: spawn actual CLI process and add to pool
+            // Process pool replenishment is deferred to the E4 Build wave.
+            // Full implementation spawns a CLI process and SIGSTOP's it for fast session
+            // resume. Requires provider integration and PTY allocation (P1-E4-W8-S08-T01).
         }
     }
 
@@ -122,9 +122,36 @@ fn is_process_alive(pid: u32) -> bool {
     result == 0
 }
 
-#[cfg(not(unix))]
+/// Windows implementation: probe liveness via OpenProcess with
+/// PROCESS_QUERY_LIMITED_INFORMATION (0x1000). A null handle means the
+/// process has exited or the PID was never valid; close the handle immediately
+/// after the check to avoid resource leaks.
+///
+/// This replaces the prior conservative `true` stub (PTY pool zombie risk —
+/// see E4 PTY allocation spec, SPORT REGISTRY-FUNCTIONS.md, and
+/// `.claude/phases/current/p1/evidence/pty-permission-stub-audit.md`).
+#[cfg(windows)]
+fn is_process_alive(pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+    // SAFETY: Win32 API call. OpenProcess returns NULL on failure (PID gone or
+    // permission denied); we treat both as "not alive" — the process is unusable
+    // either way. We close the handle immediately on success to avoid leaks.
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if handle == 0 {
+            return false;
+        }
+        CloseHandle(handle);
+        true
+    }
+}
+
+/// Fallback for non-Unix, non-Windows platforms (e.g. wasm32, bare-metal targets).
+/// Returns true (conservative) — these targets are not supported for PTY allocation.
+/// Windows and Unix each have accurate implementations above.
+#[cfg(not(any(unix, windows)))]
 fn is_process_alive(_pid: u32) -> bool {
-    // Non-Unix platform — assume alive (conservative)
     true
 }
 

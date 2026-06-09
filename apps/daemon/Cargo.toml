@@ -123,6 +123,10 @@ tempfile = "3"
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
+# Windows-only: process liveness probe via OpenProcess (PTY pool guard — E4)
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Threading"] }
+
 # Sprint FF PL.13 — Plugin runtime dependencies
 # libloading: dlopen native dylib plugins (.so/.dylib/.dll)
 libloading = "0.8"

@@ -1,0 +1,6 @@
+{
+  "provider": "gemini-text-embedding-004",
+  "recall_at_10": 0.90,
+  "p95_ms": 180,
+  "composite_score": 0.75
+}
