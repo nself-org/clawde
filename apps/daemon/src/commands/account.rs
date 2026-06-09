@@ -5,9 +5,12 @@
 //! Outputs: Prints account table or confirmation messages; mutates daemon state.
 //! Constraints: Async; requires the daemon to be running and reachable.
 
-use anyhow::{Context as _, Result};
-use clawd::{cli::client::{read_auth_token, DaemonClient}, config::DaemonConfig};
 use crate::cli_args::AccountCmd;
+use anyhow::{Context as _, Result};
+use clawd::{
+    cli::client::{read_auth_token, DaemonClient},
+    config::DaemonConfig,
+};
 
 pub async fn run_account(config: &DaemonConfig, cmd: AccountCmd) -> Result<()> {
     let token = read_auth_token(&config.data_dir)?;

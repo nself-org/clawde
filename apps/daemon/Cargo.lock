@@ -600,6 +600,7 @@ dependencies = [
  "ulid",
  "uuid",
  "wasmtime",
+ "windows-sys 0.59.0",
  "x25519-dalek",
 ]
 

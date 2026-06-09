@@ -5,11 +5,16 @@
 //! Outputs: Filtered log lines printed to stdout; in follow mode, polls indefinitely.
 //! Constraints: Sync (blocking poll loop); safe to Ctrl-C.
 
+use crate::logging::log_level_order;
 use anyhow::{Context as _, Result};
 use clawd::config::DaemonConfig;
-use crate::logging::log_level_order;
 
-pub fn run_logs(config: &DaemonConfig, follow: bool, lines: u64, filter: Option<&str>) -> Result<()> {
+pub fn run_logs(
+    config: &DaemonConfig,
+    follow: bool,
+    lines: u64,
+    filter: Option<&str>,
+) -> Result<()> {
     use std::fs::File;
     use std::io::{Read, Seek, SeekFrom};
 

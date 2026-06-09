@@ -5,8 +5,11 @@
 //! Outputs: Human-readable or JSON status line; exits 0 (healthy) or 1 (stopped).
 //! Constraints: Async; requires the daemon to be reachable on the configured port.
 
-use clawd::{cli::client::{read_auth_token, DaemonClient}, config::DaemonConfig};
 use crate::logging::format_uptime;
+use clawd::{
+    cli::client::{read_auth_token, DaemonClient},
+    config::DaemonConfig,
+};
 
 /// Returns exit code: 0 = healthy, 1 = stopped/unresponsive.
 pub async fn run_status(config: &DaemonConfig, json: bool) -> i32 {

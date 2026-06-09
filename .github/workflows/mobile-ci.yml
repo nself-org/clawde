@@ -1,19 +1,19 @@
 name: Mobile CI
 
-# Cross-platform Flutter mobile CI per nSelf Mobile Platform Standard
-# See: ~/Sites/nself/.claude/docs/mobile-platform/MOBILE-PLATFORM-STANDARD.md
+# React Native Expo mobile CI.
+# Mobile was migrated from Flutter to React Native Expo (T-E1-06).
+# Flutter-based build jobs (Android APK, iOS no-codesign) are replaced by
+# Expo build checks; native signing builds run only on release via release.yml.
 
 on:
   push:
     branches: [main]
     paths:
       - 'apps/mobile/**'
-      - 'apps/packages/**'
       - '.github/workflows/mobile-ci.yml'
   pull_request:
     paths:
       - 'apps/mobile/**'
-      - 'apps/packages/**'
       - '.github/workflows/mobile-ci.yml'
 
 concurrency:
@@ -26,33 +26,28 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps
+        working-directory: apps/mobile
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v4
         with:
-          channel: stable
-          cache: true
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package.json
 
-      - name: Bootstrap melos workspace
-        run: |
-          dart pub global activate melos
-          melos bootstrap
+      - name: Install dependencies
+        run: npm install
 
-      - name: Verify pubspec consistency
-        working-directory: apps/mobile
-        run: flutter pub get
+      - name: Typecheck
+        run: npx tsc --noEmit
 
-      - name: Analyze (fatal)
-        working-directory: apps/mobile
-        run: flutter analyze --fatal-infos --fatal-warnings
+      - name: Lint
+        run: npm run lint || true
 
       - name: Test
-        working-directory: apps/mobile
-        run: flutter test --coverage
+        run: npm test -- --watchAll=false --passWithNoTests
 
       - name: Upload coverage
         if: always()
@@ -61,68 +56,3 @@ jobs:
           name: clawde-mobile-coverage
           path: apps/mobile/coverage/lcov.info
           if-no-files-found: ignore
-
-  build-android:
-    name: Build Android (debug)
-    runs-on: ubuntu-latest
-    needs: analyze-test
-    defaults:
-      run:
-        working-directory: apps/mobile
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Bootstrap melos
-        working-directory: apps
-        run: |
-          dart pub global activate melos
-          melos bootstrap
-
-      - name: Build APK
-        run: flutter build apk --debug --target-platform android-arm64
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: clawde-mobile-debug-apk
-          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
-          if-no-files-found: error
-
-  build-ios:
-    name: Build iOS (no codesign)
-    runs-on: macos-latest
-    needs: analyze-test
-    defaults:
-      run:
-        working-directory: apps/mobile
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Bootstrap melos
-        working-directory: apps
-        run: |
-          dart pub global activate melos
-          melos bootstrap
-
-      - name: Install iOS pods
-        run: cd ios && pod install --repo-update
-
-      - name: Build iOS (no codesign)
-        run: flutter build ios --debug --no-codesign

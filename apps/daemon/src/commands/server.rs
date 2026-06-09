@@ -7,24 +7,16 @@
 //! Constraints: Async; must be the last thing called from `main()` — this function never
 //!              returns on normal operation.
 
+use crate::crash::{check_crash_log, install_panic_hook};
 use anyhow::Result;
 use clawd::{
-    account::AccountRegistry,
-    auth,
-    config::DaemonConfig,
-    identity,
-    intelligence::token_tracker::TokenTracker,
-    ipc::event::EventBroadcaster,
-    license, mdns, relay,
-    repo::RepoRegistry,
-    session::SessionManager,
-    storage::Storage,
-    tasks::TaskStorage,
-    telemetry, update, AppContext,
+    account::AccountRegistry, auth, config::DaemonConfig, identity,
+    intelligence::token_tracker::TokenTracker, ipc::event::EventBroadcaster, license, mdns, relay,
+    repo::RepoRegistry, session::SessionManager, storage::Storage, tasks::TaskStorage, telemetry,
+    update, AppContext,
 };
 use std::sync::Arc;
 use tracing::{info, warn};
-use crate::crash::{check_crash_log, install_panic_hook};
 
 /// Bootstrap all daemon subsystems and run the IPC server.
 ///

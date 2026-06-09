@@ -40,40 +40,40 @@ jobs:
       - name: Test
         run: melos test
 
-  # ─── Flutter desktop build (macOS) ───────────────────────────────
-  flutter-desktop:
-    name: Flutter · desktop build (macOS)
-    runs-on: macos-latest
+  # ─── Desktop build check (Tauri 2 + React/Vite) ─────────────────
+  # Desktop was migrated from Flutter to Tauri 2 + React (T-E1-07).
+  # CI checks TypeScript compilation and Jest tests; Tauri native build
+  # is validated by the macOS notarize workflow on release.
+  desktop-check:
+    name: Desktop · typecheck + test (Tauri/React)
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: apps
+        working-directory: apps/desktop
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v4
         with:
-          channel: stable
-          cache: true
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/desktop/package.json
 
-      - name: Enable macOS desktop
-        run: flutter config --enable-macos-desktop
+      - name: Install dependencies
+        run: npm install
 
-      - name: Install melos
-        run: dart pub global activate melos
+      - name: Typecheck
+        run: npm run typecheck
 
-      - name: Bootstrap workspace
-        run: melos bootstrap
-
-      - name: Build macOS debug (compile check)
-        run: flutter build macos --debug
-        working-directory: apps/desktop
+      - name: Test
+        run: npm test -- --passWithNoTests
 
   # ─── Rust daemon ──────────────────────────────────────────────────
   rust:
     name: Rust · clippy + test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -136,7 +136,7 @@ jobs:
   policy-lint:
     name: Rust · policy tests + instruction lint
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

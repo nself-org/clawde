@@ -5,6 +5,7 @@
 //! Outputs: Task tables, detail views, or silent confirmation depending on action.
 //! Constraints: Async; opens a direct SQLite connection (no daemon required).
 
+use crate::cli_args::TasksAction;
 use anyhow::Result;
 use clawd::{
     config::DaemonConfig,
@@ -14,7 +15,6 @@ use clawd::{
         TaskStorage,
     },
 };
-use crate::cli_args::TasksAction;
 
 /// Open the task DB for CLI commands (no server — just storage access).
 ///

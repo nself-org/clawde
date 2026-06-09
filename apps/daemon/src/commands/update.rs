@@ -7,8 +7,8 @@
 //! Constraints: Async; requires network access for the check step.
 
 use anyhow::Result;
-use clawd::{config::DaemonConfig, ipc::event::EventBroadcaster, update};
 use clawd::cli::client::{read_auth_token, DaemonClient};
+use clawd::{config::DaemonConfig, ipc::event::EventBroadcaster, update};
 use std::sync::Arc;
 
 pub async fn run_update(

@@ -13,7 +13,7 @@ mod logging;
 use anyhow::{Context as _, Result};
 use clap::Parser;
 use clawd::{config::DaemonConfig, service};
-use cli_args::{Args, Command, InstructionsAction, PolicyAction, BenchAction, TokenCmd};
+use cli_args::{Args, BenchAction, Command, InstructionsAction, PolicyAction, TokenCmd};
 use commands::{
     account::run_account,
     init::run_init,
