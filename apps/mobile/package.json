@@ -1,6 +1,6 @@
 {
   "name": "@clawde/mobile",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
