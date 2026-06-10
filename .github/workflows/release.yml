@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual re-run on an existing tag (e.g. after fixing the workflow without re-tagging).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and release (e.g. v0.3.3)'
+        required: true
+        type: string
   # workflow_call support (e.g. for testing release pipeline from CI).
   # Declaring SPARKLE_PRIVATE_KEY here also suppresses linter warnings.
   workflow_call:
@@ -39,6 +46,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # On workflow_dispatch, check out the specified tag so the build is
+          # identical to a tag-push run. On push/workflow_call, ref is the tag.
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -158,6 +169,7 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: release-artifacts/**
-          generate_release_notes: true
+          generate_release_notes: ${{ github.event_name != 'workflow_dispatch' }}
           fail_on_unmatched_files: true
