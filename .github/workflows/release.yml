@@ -58,8 +58,9 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
         working-directory: apps/daemon
+        timeout-minutes: 30
 
       # ─── Unix: compute SHA256 and stage artifacts ──────────────────────────
       - name: Stage artifacts (Unix)

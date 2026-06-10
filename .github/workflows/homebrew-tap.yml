@@ -8,15 +8,33 @@ jobs:
   update-tap:
     name: Update Formula
     runs-on: ubuntu-latest
+    # Requires TAP_GITHUB_TOKEN secret with repo write access to clawde-io/homebrew-clawde.
+    # To enable: add TAP_GITHUB_TOKEN in repo Settings → Secrets and variables → Actions.
+    # Without this secret the job exits cleanly (not a release blocker).
+    env:
+      TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
 
     steps:
+      - name: Check token availability
+        id: check-token
+        run: |
+          if [ -z "${TAP_TOKEN}" ]; then
+            echo "TAP_GITHUB_TOKEN secret is not set — skipping Homebrew tap update."
+            echo "To enable: add TAP_GITHUB_TOKEN with repo write access to clawde-io/homebrew-clawde."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout homebrew-clawde tap
+        if: steps.check-token.outputs.skip == 'false'
         uses: actions/checkout@v4
         with:
           repository: clawde-io/homebrew-clawde
-          token: ${{ secrets.TAP_GITHUB_TOKEN || '' }}  # Add TAP_GITHUB_TOKEN to repo Settings > Secrets and variables > Actions
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
 
       - name: Fetch release SHAs and update formula
+        if: steps.check-token.outputs.skip == 'false'
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           BASE_URL="https://github.com/clawde-io/apps/releases/download/${VERSION}"
@@ -45,6 +63,7 @@ jobs:
           sed -i "s/sha256 \"[^\"]*\" # linux$/sha256 \"${SHA_LINUX}\" # linux/" Formula/clawd.rb
 
       - name: Commit and push updated formula
+        if: steps.check-token.outputs.skip == 'false'
         run: |
           git config user.email "bot@clawde.io"
           git config user.name "ClawDE Bot"

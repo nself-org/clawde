@@ -130,8 +130,9 @@ windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_
 # Sprint FF PL.13 — Plugin runtime dependencies
 # libloading: dlopen native dylib plugins (.so/.dylib/.dll)
 libloading = "0.8"
-# wasmtime: WASM plugin sandbox (cranelift JIT backend, no OpenSSL)
-wasmtime = { version = "44", default-features = false, features = ["cranelift", "runtime", "component-model"] }
+# wasmtime: deferred to Sprint FF+ execution (stub only in P1). Re-add when
+# wasm_runtime.rs is wired with actual Engine/Store/Linker calls.
+# wasmtime = { version = "44", default-features = false, features = ["cranelift", "runtime", "component-model"] }
 # clawd_plugin_abi: stable C ABI types shared with plugins
 clawd_plugin_abi = { path = "../packages/clawd_plugin_abi" }
 
