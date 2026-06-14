@@ -39,12 +39,19 @@ import (
 
 	"github.com/nself-org/clawde/intelligence/internal/gateway"
 	"github.com/nself-org/clawde/intelligence/internal/orchestration"
+	"github.com/nself-org/clawde/intelligence/internal/pty"
 	"github.com/nself-org/clawde/intelligence/internal/retrieval"
 	"github.com/nself-org/clawde/intelligence/internal/retrieval/lanes"
+	"github.com/nself-org/clawde/intelligence/internal/sandbox"
 	"github.com/nself-org/clawde/intelligence/internal/staticanalysis"
 )
 
 func main() {
+	// MUST be first: on Linux+seccomp builds, this detects CLAWDE_SECCOMP_INIT=1
+	// (set by seccompExecutor.Execute) and installs the BPF filter then exec's
+	// the real command. On all other builds/platforms this is a no-op.
+	sandbox.MaybeRunSeccompShim()
+
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	// ── Postgres pool (required — HybridKernel cannot operate without DB) ─────
@@ -97,7 +104,22 @@ func main() {
 	reg := orchestration.NewToolRegistry(acts)
 	// Wire the registry back into Activities so ToolDispatchActivity can
 	// perform real registry-backed dispatch in the agent loop.
-	acts.WithToolRegistry(reg)
+	orchestration.WithToolRegistry(acts, reg)
+
+	// Wire the PTY pool when sandbox is enabled.
+	// The pool pre-warms CLAWDE_PTY_POOL_SIZE (default 4) /bin/sh slots so
+	// ExecuteShellActivity can route through them without per-call fork overhead.
+	if os.Getenv("CLAWDE_SANDBOX_ENABLED") == "1" {
+		pool := pty.NewPool(pty.PoolSizeFromEnv(), 0, logger)
+		if err := pool.Start(); err != nil {
+			logger.Warn("PTY pool failed to start; ExecuteShellActivity falls back to sandbox.NewDefault",
+				"error", err)
+		} else {
+			orchestration.WithPTYPool(acts, pool)
+			defer pool.Stop()
+			logger.Info("PTY pool started", "size", pty.PoolSizeFromEnv())
+		}
+	}
 
 	// ── Worker ────────────────────────────────────────────────────────────────
 	w := orchestration.NewWorker(c, acts, reg, worker.Options{})

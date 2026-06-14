@@ -190,30 +190,58 @@ func NewActivities(kernel HybridKerneler, runner AnalysisRunner, symbols SymbolL
 	return &Activities{kernel: kernel, runner: runner, symbols: symbols, recorder: recorder, gwClient: gwClient}
 }
 
-// WithPTYPool attaches an optional PTY pool to the Activities bundle.
+// withPTYPool attaches an optional PTY pool to the Activities bundle.
 // When set, ExecuteShellActivity acquires a slot from the pool instead of
 // creating a fresh sandbox executor per call.
 //
+// Unexported: Temporal's RegisterActivity reflects all exported methods on a struct
+// and panics if any returns a non-error second value. Fluent builders must be
+// unexported or not methods on the registered struct.
+//
 // Inputs:  pool — started Pool; nil is a no-op (Activities falls back to sandbox.NewDefault).
 // Outputs: *Activities (fluent).
-func (a *Activities) WithPTYPool(pool *pty.Pool) *Activities {
+func (a *Activities) withPTYPool(pool *pty.Pool) *Activities {
 	a.ptyPool = pool
 	return a
 }
 
-// WithToolRegistry attaches a ToolRegistry to the Activities bundle.
+// withToolRegistry attaches a ToolRegistry to the Activities bundle.
 //
 // Purpose: Wire the real ToolRegistry so ToolDispatchActivity can look up and
 //          execute registered tools by name. Must be called before the Temporal
 //          worker is started. When nil (default), ToolDispatchActivity returns
 //          ErrUnknownTool for every call.
 //
+// Unexported: same reason as withPTYPool — avoids Temporal registration panic.
+//
 // Inputs:  reg — a fully populated *ToolRegistry (from NewToolRegistry); nil is a no-op.
-// Outputs: *Activities (fluent, for chaining with WithPTYPool).
-// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.Activities.WithToolRegistry.
-func (a *Activities) WithToolRegistry(reg *ToolRegistry) *Activities {
+// Outputs: *Activities (fluent, for chaining with withPTYPool).
+// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.Activities.withToolRegistry.
+func (a *Activities) withToolRegistry(reg *ToolRegistry) *Activities {
 	a.registry = reg
 	return a
+}
+
+// WithPTYPool is the package-level fluent setter for the PTY pool.
+// Use this instead of the unexported method to keep call sites readable.
+//
+// Purpose: Attach a started *pty.Pool to acts so ExecuteShellActivity routes
+//          through pre-warmed PTY slots instead of spawning a fresh process per call.
+// Inputs:  acts — the Activities bundle to configure; pool — a started *pty.Pool.
+// Outputs: acts (same pointer, for chaining).
+func WithPTYPool(acts *Activities, pool *pty.Pool) *Activities {
+	return acts.withPTYPool(pool)
+}
+
+// WithToolRegistry is the package-level fluent setter for the ToolRegistry.
+// Use this instead of the unexported method to keep call sites readable.
+//
+// Purpose: Attach a *ToolRegistry to acts so ToolDispatchActivity can resolve
+//          tool names to their dispatch handlers at runtime.
+// Inputs:  acts — the Activities bundle to configure; reg — a fully populated *ToolRegistry.
+// Outputs: acts (same pointer, for chaining).
+func WithToolRegistry(acts *Activities, reg *ToolRegistry) *Activities {
+	return acts.withToolRegistry(reg)
 }
 
 // ── Activity implementations ──────────────────────────────────────────────────
@@ -354,7 +382,15 @@ func (a *Activities) ExecuteShellActivity(ctx context.Context, in ExecuteShellIn
 		return ExecuteShellOutput{}, fmt.Errorf("execute_shell: command is required")
 	}
 
-	// If a PTY pool is configured, acquire a slot and run the command through it.
+	// If a PTY pool is configured, acquire a slot and route the command through it.
+	//
+	// The acquired slot holds a pre-warmed /bin/sh process with its Stdin/Stdout
+	// pipes connected to the shell. We send a shell script command string to the
+	// slot's Stdin and use a fresh sandbox executor that is configured with the
+	// slot's pipe ends as its I/O streams.
+	//
+	// PTY pool path: Acquire slot → write shell command → read output → Release slot.
+	// The sandbox enforces the timeout; Release always runs via defer.
 	if a.ptyPool != nil {
 		slot, err := a.ptyPool.Acquire(ctx)
 		if err != nil {
@@ -362,19 +398,13 @@ func (a *Activities) ExecuteShellActivity(ctx context.Context, in ExecuteShellIn
 		}
 		defer a.ptyPool.Release(slot)
 
-		// Execute via the sandbox executor, passing slot pipes as Stdin/Stdout.
-		// The sandbox executor enforces the timeout and seccomp filter.
-		executor, err := sandbox.NewDefault()
-		if err != nil {
-			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: sandbox init: %w", err)
-		}
-		res, err := executor.Execute(ctx, sandbox.SandboxCommand{
+		res, err := sandbox.ExecuteThroughSlot(ctx, slot.Stdin, slot.Stdout, sandbox.SandboxCommand{
 			Cmd:  in.Command,
 			Args: in.Args,
 			Env:  in.Env,
 		})
 		if err != nil {
-			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: %w", err)
+			return ExecuteShellOutput{}, fmt.Errorf("execute_shell (pty slot): %w", err)
 		}
 		return ExecuteShellOutput{
 			Stdout:   res.Stdout,

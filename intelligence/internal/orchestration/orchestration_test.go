@@ -74,8 +74,8 @@ func newTestActivities(kernel HybridKerneler, recorder EvalRecorder) *Activities
 // workflows and activities registered.
 //
 // Activities are registered individually (not via struct pointer) to avoid
-// Temporal's validation panic on exported fluent helpers (WithPTYPool,
-// WithToolRegistry) that return *Activities, not error.
+// Temporal's validation panic. The fluent builder helpers (withPTYPool,
+// withToolRegistry) are unexported so Temporal's reflection does not see them.
 // stubLLMActivity and stubToolDispatchActivity are kept registered so
 // existing OnActivity mock helpers still compile; the workflow itself
 // calls LLMCallActivity / ToolDispatchActivity by registered name.
@@ -86,7 +86,7 @@ func newEnv(acts *Activities) *testsuite.TestWorkflowEnvironment {
 	env.RegisterWorkflow(AgentRunWorkflow)
 	env.RegisterWorkflow(EvalWorkflow)
 	// Register activity methods individually to avoid Temporal panicking on
-	// fluent helpers (WithPTYPool / WithToolRegistry) that have non-error returns.
+	// any method that returns a non-error second value.
 	env.RegisterActivity(acts.FetchDiffActivity)
 	env.RegisterActivity(acts.RetrieveContextActivity)
 	env.RegisterActivity(acts.RerankActivity)
@@ -111,7 +111,7 @@ func TestToolDispatchActivity_RealDispatch_KnownTool(t *testing.T) {
 	t.Parallel()
 	acts := newTestActivities(&stubKernel{}, nil)
 	reg := NewToolRegistry(acts)
-	acts.WithToolRegistry(reg)
+	WithToolRegistry(acts, reg)
 
 	// get_file_content is a built-in with a real handler. We use a file that is
 	// guaranteed to exist (this very test file via os.Args or a temp file).
@@ -139,7 +139,7 @@ func TestToolDispatchActivity_UnknownTool(t *testing.T) {
 	t.Parallel()
 	acts := newTestActivities(&stubKernel{}, nil)
 	reg := NewToolRegistry(acts)
-	acts.WithToolRegistry(reg)
+	WithToolRegistry(acts, reg)
 
 	_, err := acts.ToolDispatchActivity(context.Background(), StubToolDispatchInput{
 		ToolName: "no_such_tool",
@@ -178,7 +178,7 @@ func TestToolDispatchActivity_CustomToolWithHandler(t *testing.T) {
 	t.Parallel()
 	acts := newTestActivities(&stubKernel{}, nil)
 	reg := NewToolRegistry(acts)
-	acts.WithToolRegistry(reg)
+	WithToolRegistry(acts, reg)
 
 	customHandler := func(_ context.Context, _ map[string]any) (string, error) {
 		return "custom tool result", nil

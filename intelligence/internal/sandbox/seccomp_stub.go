@@ -54,3 +54,12 @@ func (e *seccompExecutor) Execute(ctx context.Context, sc SandboxCommand) (Sandb
 func applyFilter(_ int) error {
 	return nil
 }
+
+// MaybeRunSeccompShim is a no-op on platforms without the linux+seccomp build tag.
+//
+// Purpose: Allow cmd/worker/main.go to call this unconditionally so the
+//          self-re-exec shim path (real seccomp enforcement) is activated
+//          when the binary is rebuilt with -tags seccomp on Linux.
+func MaybeRunSeccompShim() {
+	// no-op: seccomp shim only runs under linux+seccomp build tag.
+}

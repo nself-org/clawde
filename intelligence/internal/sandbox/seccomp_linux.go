@@ -4,17 +4,22 @@
 //
 // Purpose: Apply the canonical LEDGER §D allow-list (20 syscalls + 5 PTY ioctls)
 //          via prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER) before execing the
-//          sandboxed command. The filter is installed in the forked child via
-//          SysProcAttr.Cloneflags + a pre-exec callback using cmd.SysProcAttr.
+//          sandboxed command. The filter is installed via a self-re-exec shim:
+//          the executor runs /proc/self/exe with CLAWDE_SECCOMP_INIT=1 set; the
+//          shim detects that sentinel, installs the BPF filter in-process, then
+//          syscall.Exec's the real command. This is the standard CGO-free pattern
+//          used by runc/containerd and avoids the fork+exec ordering constraint.
+//
+// Self-re-exec shim (init path):
+//   os.Getenv("CLAWDE_SECCOMP_INIT") == "1"
+//   → install filter via prctl(PR_SET_NO_NEW_PRIVS) + prctl(PR_SET_SECCOMP)
+//   → syscall.Exec(real_cmd, real_args, filtered_env)
 //
 // Build requirement: `go build -tags seccomp`
 //
-//          The real seccomp BPF filter is constructed using
-//          github.com/seccomp/libseccomp-golang when it is available. Since
-//          that library requires CGO and libseccomp.so at link time, we
-//          implement the filter directly via the Linux seccomp(2) syscall and
-//          the BPF instruction encoding. This keeps the build dependency-free
-//          while still producing a correct allow-list filter.
+//          The BPF filter is implemented directly via the Linux seccomp(2) syscall
+//          and BPF instruction encoding. No CGO, no libseccomp.so — the filter is
+//          built from the canonical LEDGER §D syscall numbers at compile time.
 //
 // Default action: SCMP_ACT_ERRNO(EPERM) — blocked syscalls return EPERM, they
 //                 do NOT kill the process. This matches ADR-008.
@@ -26,10 +31,81 @@ package sandbox
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"unsafe"
 )
+
+// seccompInitEnv is the environment sentinel used by the self-re-exec shim.
+// When present with value "1", the process installs the BPF filter then exec's
+// the real command encoded in seccompCmdEnv / seccompArgsEnv.
+const seccompInitEnv = "CLAWDE_SECCOMP_INIT"
+const seccompCmdEnv = "CLAWDE_SECCOMP_CMD"
+const seccompArgsEnv = "CLAWDE_SECCOMP_ARGS" // args joined with \x00
+
+// MaybeRunSeccompShim checks whether the current process was invoked as the
+// seccomp init shim. If so, it installs the BPF filter and exec's the real
+// command — this function never returns on the shim path.
+//
+// Purpose: Called from main() (or init() in the shim binary) so the shim
+//          installs the filter before any restricted syscall is made.
+//          On the normal (non-shim) path, this function is a no-op.
+//
+// IMPORTANT: When using the seccompExecutor, the test/production binary does NOT
+// need to call this directly — the executor invokes /proc/self/exe which handles
+// it. If you embed the intelligence binary as the executor, call this at the very
+// top of main() before any other logic.
+func MaybeRunSeccompShim() {
+	if os.Getenv(seccompInitEnv) != "1" {
+		return
+	}
+	// Install the BPF filter in this process (the shim).
+	if err := installFilter(buildBPFFilter()); err != nil {
+		fmt.Fprintf(os.Stderr, "seccomp shim: installFilter: %v\n", err)
+		os.Exit(125)
+	}
+	// Exec the real command.
+	cmd := os.Getenv(seccompCmdEnv)
+	if cmd == "" {
+		fmt.Fprintln(os.Stderr, "seccomp shim: CLAWDE_SECCOMP_CMD not set")
+		os.Exit(125)
+	}
+	argsRaw := os.Getenv(seccompArgsEnv)
+	var args []string
+	if argsRaw != "" {
+		args = strings.Split(argsRaw, "\x00")
+	}
+	argv := append([]string{cmd}, args...)
+
+	// Strip shim sentinels from the environment before exec.
+	env := filterEnv(os.Environ(), seccompInitEnv, seccompCmdEnv, seccompArgsEnv)
+
+	if err := syscall.Exec(cmd, argv, env); err != nil {
+		fmt.Fprintf(os.Stderr, "seccomp shim: exec %q: %v\n", cmd, err)
+		os.Exit(126)
+	}
+	// Unreachable.
+}
+
+// filterEnv returns env with entries whose KEY matches any of the given keys removed.
+func filterEnv(env []string, keys ...string) []string {
+	out := make([]string, 0, len(env))
+	for _, e := range env {
+		skip := false
+		for _, k := range keys {
+			if strings.HasPrefix(e, k+"=") {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			out = append(out, e)
+		}
+	}
+	return out
+}
 
 // Linux BPF / seccomp constants (from <linux/seccomp.h>, <linux/bpf_common.h>)
 const (
@@ -177,63 +253,67 @@ func newSeccompExecutor() SandboxExecutor {
 
 // Execute runs the command under the seccomp-BPF allow-list filter.
 //
-// Purpose: Restrict the child process to the canonical LEDGER §D syscall set.
+// Purpose: Restrict the child process to the canonical LEDGER §D syscall set
+//          via real kernel seccomp enforcement (prctl PR_SET_SECCOMP).
 //          Blocked syscalls return EPERM — the process continues (graceful deny).
+//
+// Implementation (CGO-free self-re-exec shim):
+//   This executor launches /proc/self/exe (the current binary) with three env
+//   sentinels set: CLAWDE_SECCOMP_INIT=1, CLAWDE_SECCOMP_CMD, CLAWDE_SECCOMP_ARGS.
+//   The shim path (MaybeRunSeccompShim) detects those sentinels at startup, calls
+//   installFilter (which calls prctl in-process — no fork ordering constraint),
+//   then syscall.Exec's the real command. The result is a child process that ran
+//   the BPF filter installation before any restricted syscall.
+//
+//   This is the standard CGO-free pattern used by runc and containerd. It requires
+//   that /proc/self/exe is readable and executable (true in all supported environments).
+//   The caller (cmd/worker/main.go) must call MaybeRunSeccompShim() at the top of
+//   main() so the shim path is handled correctly in that binary.
+//
 // Inputs:  ctx — caller context; sc — the sandbox command.
-// Outputs: SandboxResult; error on filter installation or launch failure.
-// Constraints: Uses SysProcAttr.AmbientCaps + prctl via Cloneflags is NOT used —
-//              the filter is installed via a goroutine-locked pre-exec shim.
+// Outputs: SandboxResult; error on filter build or launch failure.
 func (e *seccompExecutor) Execute(ctx context.Context, sc SandboxCommand) (SandboxResult, error) {
-	// We install the filter in the child by using exec.Cmd.SysProcAttr.
-	// Go 1.21+ supports SysProcAttr.PidfdOpen; here we use the simpler approach:
-	// build a helper binary or use /proc/self/exe pre-exec hook via Pdeathsig.
-	// Simplest correct approach: write a tiny wrapper that calls installFilter
-	// then exec's the real command via os.Exec — but that requires a helper binary.
-	//
-	// Instead, use the Go runtime fork-exec path with a custom Cloneflags that
-	// leaves seccomp installation to the child. We achieve this by setting
-	// SysProcAttr.Cloneflags and using a pipe: the parent writes the filter
-	// bytecode; the child reads it via fd 3 and installs it before exec.
-	//
-	// For maximum portability without a helper binary, use the direct syscall
-	// approach with cmd.Wait() in a locked goroutine. This is the accepted
-	// pattern in gVisor's runsc and in containerd.
-	//
-	// Practical note: Go's os/exec forks then execs; between fork and exec the
-	// child is still in Go's multi-threaded runtime. seccomp(2) must be called
-	// after fork but before exec, which is not directly possible from Go without
-	// CGO. The workaround is to use SysProcAttr.Cloneflags with CLONE_NEWUSER
-	// (for user namespaces) or install the filter via a pre-exec notification fd.
-	//
-	// Production deployment note (ADR-008): The recommended production path on
-	// Linux is to use gVisor (CLAWDE_SANDBOX_RUNTIME=gvisor) which provides
-	// full syscall interception without the fork/exec ordering constraint.
-	// This seccomp implementation is provided as a lightweight alternative for
-	// environments where Docker + runsc is not available.
-	//
-	// Current implementation: install filter in the parent's goroutine before
-	// exec using runtime.LockOSThread + SysProcAttr, which is correct for
-	// single-threaded Go exec paths.
+	// Resolve the shim executable: /proc/self/exe in the child process that will
+	// install the seccomp filter before exec-ing the real command.
+	shimExe, err := os.Readlink("/proc/self/exe")
+	if err != nil {
+		// /proc/self/exe unavailable (unusual on Linux); fall back to direct exec
+		// without seccomp — log the degradation so operators see it.
+		fmt.Fprintf(os.Stderr, "seccomp: /proc/self/exe unreadable (%v); running without filter\n", err)
+		cmd := exec.CommandContext(ctx, sc.Cmd, sc.Args...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pdeathsig: syscall.SIGKILL}
+		return runWithTimeout(ctx, cmd, sc)
+	}
 
-	filter := e.filter
-	cmd := exec.CommandContext(ctx, sc.Cmd, sc.Args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		// Pdeathsig ensures the child dies when the parent exits.
+	// Build the shim command: /proc/self/exe with sentinel env vars.
+	// The shim installs the BPF filter then exec's sc.Cmd.
+	argsEncoded := strings.Join(sc.Args, "\x00")
+	shimEnv := append(filterEnv(sc.Env), // caller's extra env (clean of sentinels)
+		seccompInitEnv+"=1",
+		seccompCmdEnv+"="+sc.Cmd,
+		seccompArgsEnv+"="+argsEncoded,
+	)
+
+	// Build an exec.Cmd for the shim (which will exec the real command after
+	// installing the filter). We do NOT use exec.CommandContext here because
+	// we pass a custom env — use the shimExe path directly.
+	shimCmd := exec.CommandContext(ctx, shimExe)
+	shimCmd.Env = append(os.Environ(), shimEnv...)
+	shimCmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid:   true,
 		Pdeathsig: syscall.SIGKILL,
 	}
 
-	// Use a pre-exec callback via cmd.ExtraFiles + a pipe to signal the child
-	// to install the filter. This is the CGO-free approach documented in
-	// golang.org/x/sys/unix#SeccompSetModeFilter.
-	//
-	// Fallback for this implementation: install NO_NEW_PRIVS + filter in the
-	// child via the ambient capability path. Since we cannot call arbitrary code
-	// between fork and exec without CGO, we document this as a known limitation
-	// and route production workloads to the gVisor executor.
-	_ = filter // filter is built and validated; applied via gVisor in production
+	// Wrap in a SandboxCommand so runWithTimeout handles stdin/stdout/timeout.
+	shimSC := SandboxCommand{
+		Cmd:      shimExe,
+		Stdin:    sc.Stdin,
+		WorkDir:  sc.WorkDir,
+		TimeoutS: sc.TimeoutS,
+		// Args/Env are encoded in env vars above; shimCmd has no CLI args.
+	}
 
-	return runWithTimeout(ctx, cmd, sc)
+	return runWithTimeoutWithCmd(ctx, shimCmd, shimSC)
 }
 
 // applyFilter installs the canonical LEDGER §D seccomp-BPF filter on the
