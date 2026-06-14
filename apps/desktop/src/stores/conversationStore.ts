@@ -41,7 +41,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   error: null,
 
   setActiveSession: (session) => set({ activeSession: session }),
-  setSessions: (sessions) => set({ sessions }),
+  setSessions: (sessions) => set({ sessions: sessions ?? [] }),
 
   setMessages: (sessionId, messages) =>
     set((state) => ({
