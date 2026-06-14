@@ -1,0 +1,169 @@
+# macos-release.yml — ClawDE macOS Tauri Notarized Desktop Release
+#
+# ============================================================
+# USER ACTION REQUIRED — Apple secrets must be added to
+# GitHub repository secrets before this workflow will run.
+# ============================================================
+#
+# Required secrets (Settings → Secrets and variables → Actions):
+#
+#   APPLE_CERTIFICATE
+#     Base64-encoded .p12 certificate file (Developer ID Application type).
+#     How to obtain:
+#       1. Open Keychain Access on macOS.
+#       2. Export your "Developer ID Application: ..." certificate as a .p12 file.
+#       3. Base64-encode it: base64 -i Certificates.p12 | pbcopy
+#     Apple Developer Portal: https://developer.apple.com/account/resources/certificates
+#     Certificate type needed: "Developer ID Application" (for distributing outside App Store)
+#
+#   APPLE_CERTIFICATE_PASSWORD
+#     The passphrase you set when exporting the .p12 file.
+#
+#   APPLE_TEAM_ID
+#     Your 10-character Apple Developer Team ID.
+#     Found at: https://developer.apple.com/account → Membership → Team ID
+#
+#   APP_STORE_CONNECT_API_KEY_ID
+#     The Key ID from your App Store Connect API key (used for notarization via notarytool).
+#     How to obtain: App Store Connect → Users and Access → Integrations → Keys → (+) New Key
+#     Select "Developer" role. Copy the Key ID shown.
+#
+#   APP_STORE_CONNECT_API_KEY_ISSUER_ID
+#     The Issuer ID shown at the top of the Keys page in App Store Connect.
+#
+#   APP_STORE_CONNECT_API_KEY
+#     The content of the downloaded .p8 API key file.
+#     Download it once when creating the key (cannot be re-downloaded).
+#     Copy the raw .p8 content (-----BEGIN EC PRIVATE KEY----- … -----END EC PRIVATE KEY-----).
+#
+# ============================================================
+
+name: macOS Release — ClawDE (Tauri Notarized)
+
+on:
+  push:
+    tags:
+      - 'clawde-v*'
+  workflow_dispatch:
+
+concurrency:
+  group: macos-release-clawde-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  PNPM_VERSION: '9'
+  NODE_VERSION: '20'
+
+jobs:
+  macos-release:
+    name: Build & Notarize macOS
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+            arch: arm64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: cargo-clawde-${{ matrix.target }}-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-clawde-${{ matrix.target }}-
+
+      - name: Import Apple signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Install pnpm dependencies
+        working-directory: apps/desktop
+        run: pnpm install --frozen-lockfile
+
+      - name: Write API key to disk for notarytool
+        env:
+          APPLE_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: echo "$APPLE_API_KEY_CONTENT" > /tmp/api_key.p8
+
+      - name: Build & sign with Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APPLE_API_KEY_PATH: /tmp/api_key.p8
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: --target ${{ matrix.target }}
+
+      - name: Notarize .dmg with apple-notarytool
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APPLE_API_KEY_ISSUER: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: |
+          for dmg in apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg; do
+            xcrun notarytool submit "$dmg" \
+              --key /tmp/api_key.p8 \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_KEY_ISSUER" \
+              --team-id "$APPLE_TEAM_ID" \
+              --wait
+            xcrun stapler staple "$dmg"
+          done
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clawde-macos-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+          retention-days: 30
+
+      - name: Clean up API key
+        if: always()
+        run: rm -f /tmp/api_key.p8
