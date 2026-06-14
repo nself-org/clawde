@@ -6,8 +6,8 @@
  * SPORT: T-E1-07
  */
 
-import React, { useEffect, useState } from "react";
-import { RefreshCw, MessageSquare, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RefreshCw, MessageSquare } from "lucide-react";
 import { listSessions } from "@/lib/tauriApi";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useAppStore } from "@/stores/appStore";

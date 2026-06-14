@@ -6,7 +6,7 @@
  * SPORT: T-E1-07
  */
 
-import React from "react";
+import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useAppStore } from "@/stores/appStore";
 
@@ -20,10 +20,6 @@ beforeEach(() => {
     currentRoute: "chat",
   });
 });
-
-// Lazy import to ensure mocks are set up first
-const getAppShell = () =>
-  import("@/components/AppShell").then((m) => m.AppShell);
 
 describe("AppShell", () => {
   it("renders without crashing", async () => {

@@ -6,7 +6,7 @@
  * SPORT: T-E1-07
  */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Command } from "@tauri-apps/plugin-shell";
 import { GitBranch, GitCommit, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";

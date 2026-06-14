@@ -6,17 +6,11 @@
  * SPORT: T-E1-07
  */
 
-import React, { useEffect, useState } from "react";
-import { readDir } from "@tauri-apps/plugin-fs";
+import { useEffect, useState } from "react";
+import { readDir, type DirEntry } from "@tauri-apps/plugin-fs";
 import { FolderOpen, File, FolderClosed } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
 import { pickProjectFolder } from "@/lib/tauriApi";
-
-interface DirEntry {
-  name?: string;
-  isDirectory: boolean;
-  path: string;
-}
 
 export function FilesScreen() {
   const activeProjectPath = useAppStore((s) => s.activeProjectPath);
@@ -35,13 +29,13 @@ export function FilesScreen() {
     readDir(activeProjectPath)
       .then((items) => {
         const mapped = items
-          .filter((e) => !e.name?.startsWith("."))
+          .filter((e) => !e.name.startsWith("."))
           .sort((a, b) => {
             if (a.isDirectory !== b.isDirectory)
               return a.isDirectory ? -1 : 1;
-            return (a.name ?? "").localeCompare(b.name ?? "");
+            return a.name.localeCompare(b.name);
           });
-        setEntries(mapped as DirEntry[]);
+        setEntries(mapped);
       })
       .catch((err) => setError(String(err)))
       .finally(() => setLoading(false));
@@ -89,7 +83,7 @@ export function FilesScreen() {
         <div className="overflow-y-auto">
           {entries.map((entry) => (
             <div
-              key={entry.path}
+              key={entry.name}
               className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-900 transition-colors text-sm"
             >
               {entry.isDirectory ? (

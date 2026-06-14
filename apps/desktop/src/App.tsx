@@ -6,7 +6,7 @@
  * SPORT: T-E1-07
  */
 
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Component, ErrorInfo, ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useClawDE } from "@/hooks/useClawDE";
 

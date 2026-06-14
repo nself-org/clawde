@@ -6,7 +6,6 @@
  * SPORT: T-E1-07
  */
 
-import React from "react";
 import { Package, Plus } from "lucide-react";
 
 const PLACEHOLDER_PACKS = [

@@ -6,11 +6,10 @@
  * SPORT: T-E1-07
  */
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, MessageSquare } from "lucide-react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useAppStore } from "@/stores/appStore";
-import type { Session } from "@/types";
 
 interface SearchResult {
   sessionId: string;

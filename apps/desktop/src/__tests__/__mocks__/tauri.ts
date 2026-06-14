@@ -18,7 +18,7 @@ export const Command = {
     execute: jest.fn().mockResolvedValue({ code: 0, stdout: "", stderr: "" }),
   })),
 };
-export const open = jest.fn().mockResolvedValue(undefined);
+export const shellOpen = jest.fn().mockResolvedValue(undefined);
 
 // Dialog
 export const open: jest.Mock = jest.fn().mockResolvedValue(null);

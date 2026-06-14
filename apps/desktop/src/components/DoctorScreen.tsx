@@ -6,8 +6,8 @@
  * SPORT: T-E1-07
  */
 
-import React, { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, XCircle, RefreshCw, Loader2 } from "lucide-react";
 import { Command } from "@tauri-apps/plugin-shell";
 import { healthCheck } from "@/lib/tauriApi";
 import { useAppStore } from "@/stores/appStore";
@@ -48,9 +48,8 @@ async function checkGitAvailable(): Promise<DoctorCheck> {
 }
 
 export function DoctorScreen() {
-  const { daemonStatus, daemonVersion, daemonError, refreshDaemon } = useAppStore((s) => ({
+  const { daemonStatus, daemonError, refreshDaemon } = useAppStore((s) => ({
     daemonStatus: s.daemonStatus,
-    daemonVersion: s.daemonVersion,
     daemonError: s.daemonError,
     refreshDaemon: s.refreshDaemon,
   }));
@@ -106,7 +105,6 @@ export function DoctorScreen() {
   useEffect(() => { runChecks(); }, []);
 
   const allOk = checks.length > 0 && checks.every((c) => c.ok);
-  const hasWarning = checks.some((c) => !c.ok);
 
   return (
     <div className="flex flex-col h-full p-4" style={{ background: "#030712" }}>

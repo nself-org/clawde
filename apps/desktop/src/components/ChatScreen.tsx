@@ -6,7 +6,7 @@
  * SPORT: T-E1-07
  */
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   Plus, ChevronLeft, ChevronRight, Send, Square,
   Loader2, FolderOpen, Clock,

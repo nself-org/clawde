@@ -2,13 +2,12 @@
  * Purpose: Jest config for ClawDE desktop unit + component tests.
  * SPORT: T-E1-07
  */
-import type { Config } from "jest";
 
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
-  setupFilesAfterFramework: [],
-  setupFilesAfterFramework: [],
+  setupFilesAfterEnv: ["@testing-library/jest-dom"],
   setupFiles: [],
   globals: {
     "ts-jest": {
@@ -28,4 +27,4 @@ const config: Config = {
   collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.d.ts"],
 };
 
-export default config;
+module.exports = config;

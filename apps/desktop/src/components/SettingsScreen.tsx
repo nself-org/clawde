@@ -6,8 +6,8 @@
  * SPORT: T-E1-07
  */
 
-import React, { useState } from "react";
-import { Settings, ExternalLink, Info } from "lucide-react";
+import { useState } from "react";
+import { Settings, ExternalLink } from "lucide-react";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { useAppStore } from "@/stores/appStore";
 
@@ -105,7 +105,7 @@ export function SettingsScreen() {
         </div>
         <div
           className="rounded-xl border divide-y"
-          style={{ borderColor: "#1e2638", background: "#0a0e1a", borderDivide: "#1e2638" }}
+          style={{ borderColor: "#1e2638", background: "#0a0e1a" }}
         >
           <div className="px-4">
             <Toggle
