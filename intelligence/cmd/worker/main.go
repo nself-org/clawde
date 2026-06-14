@@ -7,13 +7,17 @@
 // Usage:
 //
 //	go run ./cmd/worker
-//	TEMPORAL_HOST_URL=temporal:7233 TEMPORAL_NAMESPACE=clawde go run ./cmd/worker
+//	TEMPORAL_HOST_URL=temporal:7233 TEMPORAL_NAMESPACE=clawde CLAWDE_PG_DSN=... go run ./cmd/worker
 //
 // Environment variables:
 //
 //	TEMPORAL_HOST_URL      — Temporal frontend (default localhost:7233)
 //	TEMPORAL_NAMESPACE     — Temporal namespace (default "clawde")
+//	CLAWDE_PG_DSN          — Postgres DSN (required; fatal if unset)
 //	CLAWDE_SANDBOX_ENABLED — set to "1" to enable execute_shell tool (off by default)
+//	CLAWDE_GRPC_ADDR       — host:port of the clawde-intelligence gRPC server for LLM
+//	                         calls (default localhost:8090). When unset or unreachable,
+//	                         LLMCallActivity falls back to stub mode with a log warning.
 //
 // nSelf deployment: add to docker-compose via `nself build` as CS_N.
 // Do NOT hand-edit docker-compose.yml — see nSelf-First Doctrine (PPI).
@@ -28,15 +32,33 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.temporal.io/sdk/worker"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/google/uuid"
+	"github.com/nself-org/clawde/intelligence/internal/gateway"
 	"github.com/nself-org/clawde/intelligence/internal/orchestration"
 	"github.com/nself-org/clawde/intelligence/internal/retrieval"
+	"github.com/nself-org/clawde/intelligence/internal/retrieval/lanes"
+	"github.com/nself-org/clawde/intelligence/internal/staticanalysis"
 )
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	// ── Postgres pool (required — HybridKernel cannot operate without DB) ─────
+	pgDSN := os.Getenv("CLAWDE_PG_DSN")
+	if pgDSN == "" {
+		logger.Error("CLAWDE_PG_DSN is required but not set; cannot start Temporal worker")
+		os.Exit(1)
+	}
+	pgPool, err := pgxpool.New(context.Background(), pgDSN)
+	if err != nil {
+		logger.Error("failed to create pgx pool", "error", err)
+		os.Exit(1)
+	}
+	defer pgPool.Close()
 
 	// ── Temporal client ───────────────────────────────────────────────────────
 	c, err := orchestration.NewTemporalClient()
@@ -47,13 +69,35 @@ func main() {
 	defer c.Close()
 
 	// ── Activity dependencies ─────────────────────────────────────────────────
-	// In production, replace noopKernel with retrieval.NewHybridKernel(db, cfg)
-	// and noopRunner with staticanalysis.NewRunner(store, logger).
-	var kernel orchestration.HybridKerneler = &noopKernel{}
-	var runner orchestration.AnalysisRunner = &noopRunner{}
+	dbQuerier := lanes.NewPgxAdapter(pgPool)
+	kernel := retrieval.NewHybridKernel(dbQuerier, retrieval.HybridConfig{})
 
-	acts := orchestration.NewActivities(kernel, runner, nil, nil)
+	findingsStore := staticanalysis.NewPgxFindingsStore(pgPool)
+	runner := staticanalysis.NewRunner(findingsStore, logger)
+
+	// ── GatewayClient for LLM calls (LLMCallActivity) ────────────────────────
+	// Connect to the clawde-intelligence gRPC server (same process or sidecar).
+	// When CLAWDE_GRPC_ADDR is unset, gwClient stays nil and LLMCallActivity
+	// falls back to stub mode with a log.Warn — no worker startup failure.
+	var gwClient orchestration.GatewayClient
+	if grpcAddr := os.Getenv("CLAWDE_GRPC_ADDR"); grpcAddr != "" {
+		grpcConn, grpcErr := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if grpcErr != nil {
+			logger.Warn("CLAWDE_GRPC_ADDR dial failed; LLMCallActivity will run in stub mode",
+				"addr", grpcAddr, "error", grpcErr)
+		} else {
+			defer grpcConn.Close()
+			gwClient = gateway.NewGRPCGatewayClient(grpcConn)
+		}
+	} else {
+		logger.Warn("CLAWDE_GRPC_ADDR not set; LLMCallActivity will run in stub mode (set to host:port to enable real LLM calls)")
+	}
+
+	acts := orchestration.NewActivities(kernel, runner, nil, nil, gwClient)
 	reg := orchestration.NewToolRegistry(acts)
+	// Wire the registry back into Activities so ToolDispatchActivity can
+	// perform real registry-backed dispatch in the agent loop.
+	acts.WithToolRegistry(reg)
 
 	// ── Worker ────────────────────────────────────────────────────────────────
 	w := orchestration.NewWorker(c, acts, reg, worker.Options{})
@@ -73,24 +117,3 @@ func main() {
 	logger.Info("shutting down Temporal worker")
 	w.Stop()
 }
-
-// ── no-op dependencies (production wires real implementations) ────────────────
-
-// noopKernel satisfies orchestration.HybridKerneler without a DB.
-// Replace with retrieval.NewHybridKernel in production.
-type noopKernel struct{}
-
-func (noopKernel) RetrieveContext(
-	_ context.Context,
-	_ uuid.UUID,
-	_ string,
-	_ []float32,
-) (*retrieval.RetrievalContext, error) {
-	return &retrieval.RetrievalContext{}, nil
-}
-
-// noopRunner satisfies orchestration.AnalysisRunner without external tools.
-// Replace with staticanalysis.NewRunner in production.
-type noopRunner struct{}
-
-func (noopRunner) Handle(_ context.Context, _ []byte) error { return nil }

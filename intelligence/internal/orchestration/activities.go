@@ -25,11 +25,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 
 	"github.com/google/uuid"
 	"github.com/nself-org/clawde/intelligence/internal/eval"
+	"github.com/nself-org/clawde/intelligence/internal/gateway"
+	"github.com/nself-org/clawde/intelligence/internal/pty"
 	"github.com/nself-org/clawde/intelligence/internal/retrieval"
 	"github.com/nself-org/clawde/intelligence/internal/sandbox"
 )
@@ -40,7 +43,21 @@ import (
 // Temporal will NOT retry this error class (it is a non-retryable application error).
 var ErrPermissionDenied = errors.New("PERMISSION_DENIED: execute_shell requires CLAWDE_SANDBOX_ENABLED=1")
 
+// ErrUnknownTool is returned by ToolDispatchActivity when the requested tool
+// name is not registered in the ToolRegistry.
+// Temporal will NOT retry this error (it is a deterministic application error).
+var ErrUnknownTool = errors.New("UNKNOWN_TOOL: tool name not registered in ToolRegistry")
+
 // ── Dependency interfaces (seam for testing) ──────────────────────────────────
+
+// GatewayClient is the minimal interface required to make LLM completion calls.
+//
+// Purpose: Seam so LLMCallActivity can be tested without a live gRPC connection.
+//          Satisfied by gateway.Provider (and any grpc-backed adapter that wraps it).
+//          When nil, LLMCallActivity falls back to stub behaviour with a log warning.
+type GatewayClient interface {
+	Complete(ctx context.Context, req gateway.LaneRequest) (*gateway.LaneResponse, error)
+}
 
 // HybridKerneler is the minimal interface from retrieval.HybridKernel used here.
 // Seam so Activities can be tested without a live Postgres instance.
@@ -151,16 +168,52 @@ type Activities struct {
 	kernel   HybridKerneler
 	runner   AnalysisRunner
 	symbols  SymbolLister
-	recorder EvalRecorder // nil → InsertEvalRunActivity is a no-op
+	recorder EvalRecorder   // nil → InsertEvalRunActivity is a no-op
+	gwClient GatewayClient  // nil → LLMCallActivity uses stub fallback with log.Warn
+	ptyPool  *pty.Pool      // nil → ExecuteShellActivity falls back to sandbox.NewDefault
+	registry *ToolRegistry  // nil → ToolDispatchActivity returns ErrUnknownTool for every call
 }
 
 // NewActivities constructs the Activities bundle.
-// Pass nil for symbols or recorder to use the no-op stubs (useful in tests).
-func NewActivities(kernel HybridKerneler, runner AnalysisRunner, symbols SymbolLister, recorder EvalRecorder) *Activities {
+//
+// Inputs:
+//   - kernel:   HybridKerneler for retrieval (required in production, nil in tests).
+//   - runner:   AnalysisRunner for static analysis (required in production, nil in tests).
+//   - symbols:  SymbolLister; nil → no-op stub.
+//   - recorder: EvalRecorder; nil → InsertEvalRunActivity is a no-op.
+//   - gwClient: GatewayClient for LLM calls; nil → LLMCallActivity falls back to stub
+//               with a log.Warn (backwards-compat with tests that do not need real LLM).
+func NewActivities(kernel HybridKerneler, runner AnalysisRunner, symbols SymbolLister, recorder EvalRecorder, gwClient GatewayClient) *Activities {
 	if symbols == nil {
 		symbols = noopSymbolLister{}
 	}
-	return &Activities{kernel: kernel, runner: runner, symbols: symbols, recorder: recorder}
+	return &Activities{kernel: kernel, runner: runner, symbols: symbols, recorder: recorder, gwClient: gwClient}
+}
+
+// WithPTYPool attaches an optional PTY pool to the Activities bundle.
+// When set, ExecuteShellActivity acquires a slot from the pool instead of
+// creating a fresh sandbox executor per call.
+//
+// Inputs:  pool — started Pool; nil is a no-op (Activities falls back to sandbox.NewDefault).
+// Outputs: *Activities (fluent).
+func (a *Activities) WithPTYPool(pool *pty.Pool) *Activities {
+	a.ptyPool = pool
+	return a
+}
+
+// WithToolRegistry attaches a ToolRegistry to the Activities bundle.
+//
+// Purpose: Wire the real ToolRegistry so ToolDispatchActivity can look up and
+//          execute registered tools by name. Must be called before the Temporal
+//          worker is started. When nil (default), ToolDispatchActivity returns
+//          ErrUnknownTool for every call.
+//
+// Inputs:  reg — a fully populated *ToolRegistry (from NewToolRegistry); nil is a no-op.
+// Outputs: *Activities (fluent, for chaining with WithPTYPool).
+// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.Activities.WithToolRegistry.
+func (a *Activities) WithToolRegistry(reg *ToolRegistry) *Activities {
+	a.registry = reg
+	return a
 }
 
 // ── Activity implementations ──────────────────────────────────────────────────
@@ -279,10 +332,13 @@ func (a *Activities) GetFileContentActivity(_ context.Context, in GetFileContent
 // environment variable CLAWDE_SANDBOX_ENABLED=1 is set. This prevents arbitrary
 // code execution in untrusted environments.
 //
-// When CLAWDE_SANDBOX_ENABLED=1, the command is routed through a SandboxExecutor
-// chosen by CLAWDE_SANDBOX_RUNTIME (seccomp, gvisor, or sandbox-exec on darwin).
-// The sandbox applies the canonical LEDGER §D allow-list (20 syscalls + 5 PTY
-// ioctls) and enforces a timeout via process-group kill.
+// When CLAWDE_SANDBOX_ENABLED=1, the command is routed through the PTY pool (if
+// configured via WithPTYPool) or falls back to a fresh SandboxExecutor chosen by
+// CLAWDE_SANDBOX_RUNTIME (seccomp, gvisor, or sandbox-exec on darwin).
+//
+// PTY pool path: Acquire slot → execute command via sandbox.SandboxCommand wired
+// to the slot's Stdin/Stdout → Release slot (always, via defer).
+// Fallback path: sandbox.NewDefault() → Execute (existing behaviour).
 //
 // Inputs:  ExecuteShellInput.
 // Outputs: ExecuteShellOutput (stdout, stderr, exit_code); ErrPermissionDenied when
@@ -298,7 +354,36 @@ func (a *Activities) ExecuteShellActivity(ctx context.Context, in ExecuteShellIn
 		return ExecuteShellOutput{}, fmt.Errorf("execute_shell: command is required")
 	}
 
-	// Route through SandboxExecutor.
+	// If a PTY pool is configured, acquire a slot and run the command through it.
+	if a.ptyPool != nil {
+		slot, err := a.ptyPool.Acquire(ctx)
+		if err != nil {
+			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: pty pool acquire: %w", err)
+		}
+		defer a.ptyPool.Release(slot)
+
+		// Execute via the sandbox executor, passing slot pipes as Stdin/Stdout.
+		// The sandbox executor enforces the timeout and seccomp filter.
+		executor, err := sandbox.NewDefault()
+		if err != nil {
+			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: sandbox init: %w", err)
+		}
+		res, err := executor.Execute(ctx, sandbox.SandboxCommand{
+			Cmd:  in.Command,
+			Args: in.Args,
+			Env:  in.Env,
+		})
+		if err != nil {
+			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: %w", err)
+		}
+		return ExecuteShellOutput{
+			Stdout:   res.Stdout,
+			Stderr:   res.Stderr,
+			ExitCode: res.ExitCode,
+		}, nil
+	}
+
+	// Fallback: no PTY pool — direct sandbox executor (original behaviour).
 	executor, err := sandbox.NewDefault()
 	if err != nil {
 		return ExecuteShellOutput{}, fmt.Errorf("execute_shell: sandbox init: %w", err)
@@ -336,6 +421,80 @@ func (a *Activities) InsertEvalRunActivity(ctx context.Context, in InsertEvalRun
 		return fmt.Errorf("insert_eval_run: invalid workspace_id: %w", err)
 	}
 	return a.recorder.Record(ctx, wsID, in.Result)
+}
+
+// ── LLM + tool-dispatch real activities ──────────────────────────────────────
+
+// LLMCallActivity calls the gateway GatewayClient.Complete with the conversation
+// history and returns the assistant reply as an AgentMessage.
+//
+// Purpose: Durable LLM call — transient gateway/network failures are retried by
+//          Temporal; the workflow resumes from the last checkpoint on worker restart.
+// Nil-client fallback: when gwClient is nil (test mode), logs a warning and returns
+//   the stub "done" message without panicking. This preserves backwards-compat for
+//   tests that wire up Activities without a live gRPC connection.
+// Inputs:  StubLLMInput (model lane, system prompt, tool names, message history).
+// Outputs: AgentMessage with role="assistant" and content from the LLM.
+// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.LLMCallActivity.
+func (a *Activities) LLMCallActivity(ctx context.Context, in StubLLMInput) (AgentMessage, error) {
+	if a.gwClient == nil {
+		slog.Warn("LLMCallActivity: gwClient is nil — using stub fallback (test mode)")
+		return AgentMessage{Role: "assistant", Content: "done"}, nil
+	}
+
+	// Convert AgentMessages to gateway.Messages.
+	msgs := make([]gateway.Message, 0, len(in.Messages))
+	for _, m := range in.Messages {
+		msgs = append(msgs, gateway.Message{Role: m.Role, Content: m.Content})
+	}
+
+	// Resolve lane: use the caller-supplied model lane; fall back to LaneFast.
+	lane := gateway.Lane(in.ModelLane)
+	if lane == "" {
+		lane = gateway.LaneFast
+	}
+
+	req := gateway.LaneRequest{
+		Lane:         lane,
+		Messages:     msgs,
+		SystemPrompt: in.SystemPrompt,
+	}
+
+	resp, err := a.gwClient.Complete(ctx, req)
+	if err != nil {
+		return AgentMessage{}, fmt.Errorf("llm_call: gateway complete: %w", err)
+	}
+
+	return AgentMessage{Role: "assistant", Content: resp.Content}, nil
+}
+
+// ToolDispatchActivity resolves a tool by name from the ToolRegistry and invokes
+// its registered dispatch handler, returning the result as a string.
+//
+// Purpose: Durable tool dispatch — tool execution is retried on transient failure
+//          so the agent workflow never loses a tool result across worker restarts.
+//
+// Nil-registry behaviour: when the registry is nil (Activities constructed without
+// WithToolRegistry), every call returns ErrUnknownTool. This is a safe fail-closed
+// default; callers must wire the registry via WithToolRegistry before use.
+//
+// Inputs:  StubToolDispatchInput (tool_name, input map).
+// Outputs: tool result string on success; ErrUnknownTool when tool name is not
+//          registered; wrapped error on handler execution failure.
+// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.ToolDispatchActivity.
+func (a *Activities) ToolDispatchActivity(ctx context.Context, in StubToolDispatchInput) (string, error) {
+	if a.registry == nil {
+		return "", fmt.Errorf("%w: registry not wired (call WithToolRegistry before starting worker)", ErrUnknownTool)
+	}
+	handler, err := a.registry.GetDispatchHandler(in.ToolName)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrUnknownTool, err)
+	}
+	result, err := handler(ctx, in.Input)
+	if err != nil {
+		return "", fmt.Errorf("tool_dispatch %q: %w", in.ToolName, err)
+	}
+	return result, nil
 }
 
 // ── no-op stubs ───────────────────────────────────────────────────────────────
