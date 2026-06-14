@@ -80,19 +80,23 @@ type rpcError struct {
 //
 // SPORT: REGISTRY-FUNCTIONS.md → hostadapter.ClaudeCodeAdapter.
 type ClaudeCodeAdapter struct {
-	source ContextSource
-	cfg    AdapterConfig
-	logger *slog.Logger
-	now    func() time.Time
+	source   ContextSource
+	compiler ContextCompiler
+	cfg      AdapterConfig
+	logger   *slog.Logger
+	now      func() time.Time
 }
 
-// NewClaudeCodeAdapter constructs a ClaudeCodeAdapter over the given source. A
-// nil logger falls back to a stderr JSON logger (audit records never dropped).
-func NewClaudeCodeAdapter(source ContextSource, logger *slog.Logger) *ClaudeCodeAdapter {
+// NewClaudeCodeAdapter constructs a ClaudeCodeAdapter over the given source and
+// an optional compiler hook (nil is safe — graceful-degrade per ADR-001). In
+// production pass NewCompilerHook(comp); tests may inject any ContextCompiler
+// mock. A nil logger falls back to a stderr JSON logger (audit records never
+// dropped).
+func NewClaudeCodeAdapter(source ContextSource, comp ContextCompiler, logger *slog.Logger) *ClaudeCodeAdapter {
 	if logger == nil {
 		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
-	return &ClaudeCodeAdapter{source: source, logger: logger, now: time.Now}
+	return &ClaudeCodeAdapter{source: source, compiler: comp, logger: logger, now: time.Now}
 }
 
 // Name implements HostAdapter. Returns "claude-code".
@@ -115,9 +119,22 @@ func (a *ClaudeCodeAdapter) Uninstall(ctx context.Context) error {
 	return nil
 }
 
-// SessionStart implements HostAdapter. Fetches context and emits an audit line.
+// SessionStart implements HostAdapter. Pre-warms the context cache via
+// compiler.SessionStart (2s deadline, ADR-001 graceful-degrade: error logged,
+// never returned), then fetches context and emits an audit line.
 // Retrieval failure degrades gracefully (ADR-001): Enriched:false + warning.
 func (a *ClaudeCodeAdapter) SessionStart(ctx context.Context, event HookEvent) (HookResult, error) {
+	// Pre-warm the context cache so the first IDE prompt gets enriched context
+	// immediately. Runs under a hard 2s deadline; errors are swallowed (log+continue).
+	if a.compiler != nil {
+		sCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if enriched := a.compiler.PreWarmSession(sCtx, a.workspaceFor(event)); !enriched {
+			a.logger.WarnContext(ctx, "claude-code compiler.SessionStart unenriched",
+				"host", ccHostName, "session_id", event.SessionID)
+		}
+	}
+
 	start := a.now()
 	ws := a.workspaceFor(event)
 	rc, err := a.retrieve(ctx, ws, event.SessionID)
