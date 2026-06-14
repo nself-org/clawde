@@ -311,3 +311,36 @@ func TestNew_UnknownRuntime(t *testing.T) {
 		t.Fatal("expected error for unknown runtime")
 	}
 }
+
+// ── 11. sandbox.Apply (TestSeccompBPFInstall) ────────────────────────────────
+// On Linux with seccomp build tag: Apply(0) installs the BPF filter.
+// On macOS: Apply is a no-op; test verifies it compiles and returns nil.
+// On all platforms: Apply(0) must not return an error.
+//
+// Note: On Linux without the seccomp build tag the stub always returns nil.
+// The full filter-install path is tested on CI with -tags seccomp.
+func TestSeccompBPFInstall(t *testing.T) {
+	t.Parallel()
+	// Apply(0) targets the current process. On platforms without real seccomp
+	// this is a no-op. On Linux+seccomp this installs the filter — which is
+	// safe in a test subprocess since the test already limits its own syscalls.
+	//
+	// IMPORTANT: This test must be run as its own subprocess on CI to avoid
+	// restricting the entire test binary. The CI job calls:
+	//   go test ./internal/sandbox/... -run TestSeccompBPFInstall -count=1
+	// which runs only this test in its own process.
+	if err := Apply(0); err != nil {
+		t.Errorf("Apply(0) returned error: %v", err)
+	}
+}
+
+// TestApply_MacOSNoOp verifies that Apply is a no-op on macOS.
+func TestApply_MacOSNoOp(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS != "darwin" {
+		t.Skip("darwin-only: verifies seatbelt no-op path")
+	}
+	if err := Apply(0); err != nil {
+		t.Errorf("Apply(0) on darwin: expected nil, got %v", err)
+	}
+}

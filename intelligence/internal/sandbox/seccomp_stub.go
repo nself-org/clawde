@@ -43,3 +43,14 @@ func (e *seccompExecutor) Execute(ctx context.Context, sc SandboxCommand) (Sandb
 	cmd := exec.CommandContext(ctx, sc.Cmd, sc.Args...)
 	return runWithTimeout(ctx, cmd, sc)
 }
+
+// applyFilter is the no-op stub for platforms without Linux+seccomp build tag.
+//
+// Purpose: Satisfy the sandbox.Apply(pid) call from the PTY pool on macOS and
+//          non-seccomp Linux builds. On macOS, seatbelt is applied at spawn time
+//          via sandbox-exec(1) and does not require a per-pid post-fork call.
+// Inputs:  pid — ignored.
+// Outputs: nil always.
+func applyFilter(_ int) error {
+	return nil
+}

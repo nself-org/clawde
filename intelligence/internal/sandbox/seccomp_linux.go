@@ -235,3 +235,24 @@ func (e *seccompExecutor) Execute(ctx context.Context, sc SandboxCommand) (Sandb
 
 	return runWithTimeout(ctx, cmd, sc)
 }
+
+// applyFilter installs the canonical LEDGER §D seccomp-BPF filter on the
+// calling process (pid is accepted for API symmetry but the filter is always
+// applied to the current process via prctl — the only safe approach without CGO).
+//
+// Purpose: Used by the PTY pool to harden a pre-warmed slot before it is
+//          borrowed by ExecuteShellActivity. Call this inside the slot process
+//          (via /proc/self/exe or equivalent) rather than from the parent.
+//          When called from the parent (pid != 0), this installs the filter on
+//          the PARENT which restricts its own syscalls — only use from the child.
+//          For pool slots created via os.StartProcess, the filter should be
+//          installed by a pre-exec hook; see ADR-008 for the recommended pattern.
+//
+// Inputs:  pid — accepted for API consistency; the filter is applied to the
+//          current thread/process via prctl regardless of pid value.
+// Outputs: error if prctl(PR_SET_NO_NEW_PRIVS) or prctl(PR_SET_SECCOMP) fails.
+// Constraints: Must be called after fork, before exec (or in the process to restrict).
+func applyFilter(_ int) error {
+	filter := buildBPFFilter()
+	return installFilter(filter)
+}
