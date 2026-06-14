@@ -169,25 +169,25 @@ type GatewayServiceServer interface {
 type UnimplementedGatewayServiceServer struct{}
 
 func (UnimplementedGatewayServiceServer) Complete(context.Context, *CompleteRequest) (*CompleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Complete not implemented")
+	return nil, status.Error(codes.Unimplemented, "method Complete not implemented")
 }
 func (UnimplementedGatewayServiceServer) StreamComplete(*StreamCompleteRequest, grpc.ServerStreamingServer[StreamChunk]) error {
-	return status.Errorf(codes.Unimplemented, "method StreamComplete not implemented")
+	return status.Error(codes.Unimplemented, "method StreamComplete not implemented")
 }
 func (UnimplementedGatewayServiceServer) Embed(context.Context, *EmbedRequest) (*EmbedResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Embed not implemented")
+	return nil, status.Error(codes.Unimplemented, "method Embed not implemented")
 }
 func (UnimplementedGatewayServiceServer) Rerank(context.Context, *RerankRequest) (*RerankResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Rerank not implemented")
+	return nil, status.Error(codes.Unimplemented, "method Rerank not implemented")
 }
 func (UnimplementedGatewayServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
+	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
 }
 func (UnimplementedGatewayServiceServer) CompileContext(context.Context, *CompileContextRequest) (*CompileContextResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CompileContext not implemented")
+	return nil, status.Error(codes.Unimplemented, "method CompileContext not implemented")
 }
 func (UnimplementedGatewayServiceServer) IngestDocURL(context.Context, *IngestDocURLRequest) (*IngestDocURLResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method IngestDocURL not implemented")
+	return nil, status.Error(codes.Unimplemented, "method IngestDocURL not implemented")
 }
 func (UnimplementedGatewayServiceServer) mustEmbedUnimplementedGatewayServiceServer() {}
 func (UnimplementedGatewayServiceServer) testEmbeddedByValue()                        {}
