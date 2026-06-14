@@ -153,3 +153,20 @@ func New(rt Runtime) (SandboxExecutor, error) {
 func NewDefault() (SandboxExecutor, error) {
 	return New(DetectRuntime())
 }
+
+// Apply installs the seccomp-BPF filter on the process identified by pid.
+//
+// Purpose: Allow the PTY pool (internal/pty) to apply the sandbox filter to a
+//          pre-warmed slot process after fork but before the slot is used.
+//          On Linux (seccomp build tag), installs the canonical LEDGER §D BPF
+//          allow-list via prctl(PR_SET_SECCOMP). On macOS, seatbelt is applied
+//          at spawn time via sandbox-exec, so this function is a no-op.
+//          On all other platforms, returns nil (no-op).
+//
+// Inputs:  pid — process ID to apply the filter to (0 = current process).
+// Outputs: error on filter installation failure (Linux only).
+// Constraints: Must be called before exec on Linux (prctl is per-thread/process).
+// SPORT: REGISTRY-FUNCTIONS.md → sandbox.Apply.
+func Apply(pid int) error {
+	return applyFilter(pid)
+}

@@ -124,9 +124,9 @@ type AgentRunOutput struct {
 // AgentRunWorkflow implements a durable multi-turn LLM agent loop.
 //
 // Each turn:
-//  1. LLM call (stubLLMActivity — replaced by real gateway at Worker registration).
+//  1. LLM call via Activities.LLMCallActivity (real gateway-backed; stub fallback when nil client).
 //  2. If no tool call in response → stop.
-//  3. Dispatch tool call via stubToolDispatchActivity (replaced by ToolRegistry dispatcher).
+//  3. Dispatch tool call via Activities.ToolDispatchActivity (real ToolRegistry dispatcher).
 //  4. Append tool result and continue.
 //
 // Bounded by MaxTurns (default 10).
@@ -143,7 +143,7 @@ func AgentRunWorkflow(ctx workflow.Context, in AgentRunInput) (AgentRunOutput, e
 
 	for turn := 0; turn < maxTurns; turn++ {
 		var assistantMsg AgentMessage
-		err := workflow.ExecuteActivity(actCtx, stubLLMActivity,
+		err := workflow.ExecuteActivity(actCtx, "LLMCallActivity",
 			StubLLMInput{
 				ModelLane:    in.ModelLane,
 				SystemPrompt: in.SystemPrompt,
@@ -162,7 +162,7 @@ func AgentRunWorkflow(ctx workflow.Context, in AgentRunInput) (AgentRunOutput, e
 		}
 
 		var toolResult string
-		dispatchErr := workflow.ExecuteActivity(actCtx, stubToolDispatchActivity,
+		dispatchErr := workflow.ExecuteActivity(actCtx, "ToolDispatchActivity",
 			StubToolDispatchInput{ToolName: tc.Name, Input: tc.Input},
 		).Get(actCtx, &toolResult)
 		if dispatchErr != nil {

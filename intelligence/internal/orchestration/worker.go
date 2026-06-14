@@ -81,14 +81,9 @@ func NewWorker(c client.Client, acts *Activities, reg *ToolRegistry, opts worker
 
 	// ── Register built-in Activities ─────────────────────────────────────────
 	// RegisterActivity accepts a struct pointer — all exported methods on *Activities
-	// are registered as activities under their Go method name (e.g. "RetrieveContextActivity").
+	// are registered as activities under their Go method name (e.g. "RetrieveContextActivity",
+	// "LLMCallActivity", "ToolDispatchActivity").
 	w.RegisterActivity(acts)
-
-	// ── Register stub activities (seam for AgentRunWorkflow determinism) ─────
-	// In production these are replaced by real gateway + registry activities.
-	// Registered here so the workflow can reference them by function pointer.
-	w.RegisterActivity(stubLLMActivity)
-	w.RegisterActivity(stubToolDispatchActivity)
 
 	// ── Register all ToolRegistry activities ─────────────────────────────────
 	// Each tool in the registry is also registered as a named activity so

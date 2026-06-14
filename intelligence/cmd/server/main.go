@@ -3,6 +3,8 @@
 // Purpose: Start the gRPC server on 127.0.0.1:8090 (loopback, always) and
 //          optionally on a Tailscale mesh address as well when
 //          TAILSCALE_AUTHKEY is set.  The REST gateway starts on 127.0.0.1:8091.
+//          When CLAWDE_PG_DSN is set, the pgmq worker Pool is also started to
+//          drain the embed, analyze, and ingest queues.
 //
 // Env vars consumed:
 //
@@ -12,6 +14,8 @@
 //	                             default "clawde-intelligence".
 //	CLAWDE_ENV                 — "production" disables gRPC reflection.
 //	CLAWDE_HMAC_SECRET         — HMAC-SHA256 secret for auth (see server.HMACSecret).
+//	CLAWDE_PG_DSN              — Postgres connection string (postgres://…);
+//	                             empty (unset) → worker pool skipped (non-fatal).
 //
 // Tailscale ACL (configure in tailnet admin console):
 //
@@ -25,7 +29,14 @@
 //   - If Tailscale Up fails (timeout, network error, bad key), a warning is
 //     logged and the server continues with loopback-only (no crash).
 //
-// SPORT: REGISTRY-SERVICES.md — clawde-intelligence, Tailscale mesh.
+// Worker pool behaviour:
+//   - When CLAWDE_PG_DSN is set: a pgxpool is created, pgxQueueStore wired,
+//     and Pool.Start() called in a goroutine.
+//   - When CLAWDE_PG_DSN is unset: logs "worker pool skipped: CLAWDE_PG_DSN not set"
+//     and continues (non-fatal).
+//   - Pool.Stop() is called in the shutdown path before gRPC GracefulStop.
+//
+// SPORT: REGISTRY-SERVICES.md — clawde-intelligence, Tailscale mesh, clawde-worker-pool.
 package main
 
 import (
@@ -36,9 +47,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/nself-org/clawde/intelligence/internal/compiler"
 	gw "github.com/nself-org/clawde/intelligence/internal/gateway"
 	"github.com/nself-org/clawde/intelligence/internal/networking"
+	"github.com/nself-org/clawde/intelligence/internal/pty"
 	"github.com/nself-org/clawde/intelligence/internal/server"
+	"github.com/nself-org/clawde/intelligence/internal/worker"
 )
 
 func main() {
@@ -49,12 +65,22 @@ func main() {
 	// An empty slice starts the server in passthrough mode (health endpoint only).
 	providers := []gw.Provider{}
 
+	// ── Auto-context compiler ─────────────────────────────────────────────────
+	// Wire a non-nil Compiler so CompileContext returns real enriched context.
+	// TODO: wire retrieval.NewHybridKernel via DB pool (depends on T03 database wiring).
+	// For now: use a no-op retriever that satisfies the compiler.ContextRetriever
+	// interface and returns an empty result; symbols and policy are nil (both have
+	// nil-safe paths in compiler.NewCompiler per compiler.go:77-88).
+	noopRetriever := &noopContextRetriever{}
+	clawdeCompiler := compiler.NewCompiler(noopRetriever, nil, nil)
+
 	// ── gRPC + REST server ────────────────────────────────────────────────────
 	cfg, err := server.DefaultConfig(providers)
 	if err != nil {
 		logger.Error("server config failed", "error", err)
 		os.Exit(1)
 	}
+	cfg.Compiler = clawdeCompiler
 
 	srv := server.New(*cfg)
 	if err := srv.Start(); err != nil {
@@ -65,6 +91,57 @@ func main() {
 		"grpc", cfg.GRPCAddr,
 		"rest", cfg.RESTAddr,
 	)
+
+	// ── PTY pool (optional — requires CLAWDE_SANDBOX_ENABLED=1) ─────────────
+	// When CLAWDE_SANDBOX_ENABLED=1: start a pre-warmed pool of N PTY slots
+	// (size from CLAWDE_PTY_POOL_SIZE, default 4) for use by ExecuteShellActivity.
+	// When disabled or unset: log and skip — no PTY FDs opened.
+	// Pool.Stop() is called in the shutdown path before gRPC GracefulStop.
+	var ptyPool *pty.Pool
+	if os.Getenv("CLAWDE_SANDBOX_ENABLED") == "1" {
+		poolSize := pty.PoolSizeFromEnv()
+		ptyPool = pty.NewPool(poolSize, 0, logger)
+		if startErr := ptyPool.Start(); startErr != nil {
+			logger.Warn("PTY pool start failed — sandbox will fall back to per-call executor",
+				"error", startErr)
+			ptyPool = nil
+		} else {
+			logger.Info("PTY pool started", "size", poolSize)
+		}
+	} else {
+		logger.Info("PTY pool skipped: CLAWDE_SANDBOX_ENABLED not set")
+	}
+	_ = ptyPool // ptyPool wired into Activities via WithPTYPool when Temporal worker is added
+
+	// ── pgmq worker pool (optional — requires CLAWDE_PG_DSN) ─────────────────
+	// When DSN is set: connect, wire the QueueStore, register handlers, start pool.
+	// When DSN is unset: log a warning and continue — not fatal.
+	// Pool.Stop() is deferred to the shutdown path (before gRPC GracefulStop).
+	var workerPool *worker.Pool
+	pgDSN := os.Getenv("CLAWDE_PG_DSN")
+	if pgDSN == "" {
+		logger.Warn("worker pool skipped: CLAWDE_PG_DSN not set")
+	} else {
+		pgPool, pgErr := pgxpool.New(context.Background(), pgDSN)
+		if pgErr != nil {
+			logger.Warn("worker pool skipped: failed to connect to postgres",
+				"error", pgErr)
+		} else {
+			store := worker.NewPgxQueueStore(pgPool)
+			handlers := worker.DefaultHandlers(nil, nil, logger)
+			workerPool = worker.New(worker.Config{
+				Store:    store,
+				Handlers: handlers,
+				Logger:   logger,
+			})
+			workerPool.Start(context.Background())
+			logger.Info("worker pool started",
+				"queues", []string{"clawde_embed_queue", "clawde_analyze_queue", "clawde_ingest_queue"},
+			)
+			// pgPool is intentionally not closed here; it is closed when the
+			// program exits (OS reclaims connections). Pool.Stop() drains workers first.
+		}
+	}
 
 	// ── Tailscale mesh listener (optional) ────────────────────────────────────
 	// When TAILSCALE_AUTHKEY is unset: skip, loopback-only (existing behaviour).
@@ -114,6 +191,19 @@ func main() {
 	sig := <-quit
 	logger.Info("shutting down", "signal", sig.String())
 
+	// Stop worker pool first — drains in-flight jobs before closing the DB and
+	// gRPC connections. Per CR-C guidance: pool.Stop() before grpcSrv.Stop().
+	if workerPool != nil {
+		workerPool.Stop()
+		logger.Info("worker pool stopped")
+	}
+
+	// Stop PTY pool — kills all pre-warmed slots before server shutdown.
+	if ptyPool != nil {
+		ptyPool.Stop()
+		logger.Info("PTY pool stopped")
+	}
+
 	srv.Shutdown(context.Background())
 	if tsCloser != nil {
 		_ = tsCloser.Close()
@@ -142,4 +232,13 @@ func envOr(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// noopContextRetriever satisfies the compiler.ContextRetriever interface with
+// an empty-result implementation. Replace with retrieval.NewHybridKernel once
+// the DB pool is wired (TODO: T03 database wiring).
+type noopContextRetriever struct{}
+
+func (n *noopContextRetriever) RetrieveContext(_ context.Context, _, _ string) (*compiler.RetrievalResult, error) {
+	return &compiler.RetrievalResult{}, nil
 }

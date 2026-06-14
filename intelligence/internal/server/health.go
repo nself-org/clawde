@@ -63,10 +63,10 @@ func (h *healthHandler) check(ctx context.Context) *HealthResponse {
 
 	resp := &HealthResponse{
 		Status:    "ok",
-		Providers: make([]ProviderHealth, len(results)),
+		Providers: make([]*ProviderHealth, len(results)),
 	}
 	for i, r := range results {
-		resp.Providers[i] = ProviderHealth{
+		resp.Providers[i] = &ProviderHealth{
 			Name:      r.name,
 			Healthy:   r.healthy,
 			LatencyMs: r.latencyMs,

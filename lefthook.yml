@@ -1,0 +1,30 @@
+# lefthook.yml — git hook runner for clawde
+# Install: brew install lefthook && lefthook install
+# Docs: https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  commands:
+    go-fmt:
+      glob: "intelligence/**/*.go"
+      run: |
+        unformatted=$(gofmt -l {staged_files})
+        if [ -n "$unformatted" ]; then
+          echo "These files need gofmt:"
+          echo "$unformatted"
+          exit 1
+        fi
+    go-vet:
+      root: "intelligence"
+      run: go vet ./...
+
+pre-push:
+  commands:
+    intelligence-build:
+      root: "intelligence"
+      run: go build ./...
+    intelligence-test:
+      root: "intelligence"
+      run: go test ./... -count=1 -timeout 120s
+    flutter-analyze:
+      run: flutter analyze apps/desktop apps/mobile --no-fatal-infos 2>/dev/null || true

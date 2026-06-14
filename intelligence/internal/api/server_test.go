@@ -356,7 +356,8 @@ func TestPublicServer_7GateOrder(t *testing.T) {
 	defer srv.Close()
 
 	token := signRS256(t, priv)
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/probe", strings.NewReader("{}"))
+	// /v1/retrieve is in the SupplyChainCheck allowlist — all 7 gates should pass.
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/retrieve", strings.NewReader("{}"))
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)

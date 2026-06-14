@@ -32,24 +32,28 @@ const hostName = "opencode"
 //
 // SPORT: REGISTRY-FUNCTIONS.md → hostadapter.OpenCodeAdapter.
 type OpenCodeAdapter struct {
-	source ContextSource
-	cfg    AdapterConfig
-	logger *slog.Logger
+	source   ContextSource
+	compiler ContextCompiler
+	cfg      AdapterConfig
+	logger   *slog.Logger
 	// now is injectable for deterministic latency assertions in tests.
 	now func() time.Time
 }
 
-// NewOpenCodeAdapter constructs an OpenCodeAdapter over the given ContextSource.
-// A nil logger falls back to a stderr JSON logger so audit records are never
-// silently dropped.
-func NewOpenCodeAdapter(source ContextSource, logger *slog.Logger) *OpenCodeAdapter {
+// NewOpenCodeAdapter constructs an OpenCodeAdapter over the given ContextSource
+// and an optional compiler hook (nil is safe — graceful-degrade per ADR-001).
+// In production pass NewCompilerHook(comp); tests may inject any ContextCompiler
+// mock. A nil logger falls back to a stderr JSON logger so audit records are
+// never silently dropped.
+func NewOpenCodeAdapter(source ContextSource, comp ContextCompiler, logger *slog.Logger) *OpenCodeAdapter {
 	if logger == nil {
 		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 	return &OpenCodeAdapter{
-		source: source,
-		logger: logger,
-		now:    time.Now,
+		source:   source,
+		compiler: comp,
+		logger:   logger,
+		now:      time.Now,
 	}
 }
 
@@ -75,10 +79,23 @@ func (a *OpenCodeAdapter) Uninstall(ctx context.Context) error {
 	return nil
 }
 
-// SessionStart implements HostAdapter. It fetches context synchronously (so the
-// streaming passthrough has it ready BEFORE the first LLM call) and reports the
-// injected token count. On retrieval failure it degrades gracefully.
+// SessionStart implements HostAdapter. Pre-warms the context cache via
+// compiler.SessionStart (2s deadline, ADR-001 graceful-degrade: error logged,
+// never returned), then fetches context synchronously (so the streaming
+// passthrough has it ready BEFORE the first LLM call). On retrieval failure it
+// degrades gracefully.
 func (a *OpenCodeAdapter) SessionStart(ctx context.Context, event HookEvent) (HookResult, error) {
+	// Pre-warm the context cache so the first IDE prompt gets enriched context
+	// immediately. Runs under a hard 2s deadline; errors are swallowed (log+continue).
+	if a.compiler != nil {
+		sCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if enriched := a.compiler.PreWarmSession(sCtx, a.workspaceFor(event)); !enriched {
+			a.logger.WarnContext(ctx, "opencode compiler.SessionStart unenriched",
+				"host", hostName, "session_id", event.SessionID)
+		}
+	}
+
 	start := a.now()
 	ws := a.workspaceFor(event)
 

@@ -72,6 +72,11 @@ apps/mobile/android/GeneratedPluginRegistrant.java
 apps/packages/*/pubspec.lock
 apps/packages/*/build/
 
+# Go compiled binaries
+intelligence/server
+intelligence/worker
+intelligence/mcp-server
+
 # Logs
 *.log
 logs/

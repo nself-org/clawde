@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nself-org/clawde/intelligence/internal/compiler"
 	gw "github.com/nself-org/clawde/intelligence/internal/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -341,4 +342,58 @@ func freePort(t *testing.T) int {
 	port := ln.Addr().(*net.TCPAddr).Port
 	ln.Close()
 	return port
+}
+
+// ---- CompileContext unit tests (QA-B) ----
+
+// stubRetriever implements compiler.ContextRetriever and returns a single
+// scored chunk so CompileContext produces Enriched:true.
+type stubRetriever struct{}
+
+func (s *stubRetriever) RetrieveContext(_ context.Context, _, _ string) (*compiler.RetrievalResult, error) {
+	return &compiler.RetrievalResult{
+		Chunks: []compiler.ScoredChunk{
+			{FilePath: "main.go", Lang: "go", Content: "func main() {}", Score: 0.9, Method: "dense"},
+		},
+	}, nil
+}
+
+// TestCompileContext_NilCompiler verifies that a nil compiler yields
+// Enriched:false without panicking (graceful degradation per ADR-001).
+func TestCompileContext_NilCompiler(t *testing.T) {
+	h := &gatewayHandler{compiler: nil}
+	resp, err := h.CompileContext(context.Background(), &CompileContextRequest{
+		WorkspaceId: "ws-test",
+		Signals:     &SessionSignals{ActiveFilePath: "main.go"},
+	})
+	if err != nil {
+		t.Fatalf("nil compiler: unexpected error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("nil compiler: expected non-nil response")
+	}
+	if resp.Enriched {
+		t.Errorf("nil compiler: expected Enriched=false, got true")
+	}
+}
+
+// TestCompileContext_StubCompiler verifies that a non-nil compiler wired with
+// a stub retriever returns Enriched:true.
+func TestCompileContext_StubCompiler(t *testing.T) {
+	t.Setenv("CLAWDE_AUTO_CONTEXT", "true")
+	c := compiler.NewCompiler(&stubRetriever{}, nil, nil)
+	h := &gatewayHandler{compiler: c}
+	resp, err := h.CompileContext(context.Background(), &CompileContextRequest{
+		WorkspaceId: "ws-test",
+		Signals:     &SessionSignals{ActiveFilePath: "main.go"},
+	})
+	if err != nil {
+		t.Fatalf("stub compiler: unexpected error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("stub compiler: expected non-nil response")
+	}
+	if !resp.Enriched {
+		t.Errorf("stub compiler: expected Enriched=true, got false")
+	}
 }

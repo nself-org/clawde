@@ -63,14 +63,14 @@ func TestHostAdapter_ExactlySixMethods(t *testing.T) {
 }
 
 func TestOpenCodeAdapter_ImplementsHostAdapter(t *testing.T) {
-	var _ HostAdapter = NewOpenCodeAdapter(NewGRPCSource(&mockKernel{}), nil)
+	var _ HostAdapter = NewOpenCodeAdapter(NewGRPCSource(&mockKernel{}), nil, nil)
 }
 
 // ── context block + enriched=true ────────────────────────────────────────────
 
 func TestSessionStart_Enriched(t *testing.T) {
 	src := NewGRPCSource(&mockKernel{rc: threeChunkContext()})
-	a := NewOpenCodeAdapter(src, nil)
+	a := NewOpenCodeAdapter(src, nil, nil)
 	if err := a.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-1"}); err != nil {
 		t.Fatalf("install: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestFormatContextBlock_ExactShape(t *testing.T) {
 }
 
 func TestRetrieveContextTool_TokenCount(t *testing.T) {
-	a := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{rc: threeChunkContext()}), nil)
+	a := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{rc: threeChunkContext()}), nil, nil)
 	block, tokens, enriched := a.RetrieveContextTool(context.Background(), "ws-1", "auth")
 	if !enriched {
 		t.Fatal("expected enriched=true")
@@ -126,7 +126,7 @@ func TestRetrieveContextTool_TokenCount(t *testing.T) {
 
 func TestSessionStart_GracefulDegradation_ServerDown(t *testing.T) {
 	src := NewGRPCSource(&mockKernel{retErr: context.DeadlineExceeded})
-	a := NewOpenCodeAdapter(src, nil)
+	a := NewOpenCodeAdapter(src, nil, nil)
 	_ = a.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-1"})
 
 	var res HookResult
@@ -151,7 +151,7 @@ func TestSessionStart_GracefulDegradation_ServerDown(t *testing.T) {
 }
 
 func TestRetrieveContextTool_DegradesNoPanic(t *testing.T) {
-	a := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{retErr: context.Canceled}), nil)
+	a := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{retErr: context.Canceled}), nil, nil)
 	block, tokens, enriched := a.RetrieveContextTool(context.Background(), "ws", "q")
 	if enriched || block != "" || tokens != 0 {
 		t.Fatalf("expected empty/false on degradation, got block=%q tokens=%d enriched=%v", block, tokens, enriched)
@@ -159,11 +159,11 @@ func TestRetrieveContextTool_DegradesNoPanic(t *testing.T) {
 }
 
 func TestHealthCheck(t *testing.T) {
-	ok := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{}), nil)
+	ok := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{}), nil, nil)
 	if err := ok.HealthCheck(context.Background()); err != nil {
 		t.Fatalf("expected healthy, got %v", err)
 	}
-	down := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{pingErr: context.DeadlineExceeded}), nil)
+	down := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{pingErr: context.DeadlineExceeded}), nil, nil)
 	if err := down.HealthCheck(context.Background()); err == nil {
 		t.Fatal("expected error when source unreachable")
 	}
@@ -177,7 +177,7 @@ func newJSONLogger(w *strings.Builder) *slog.Logger {
 
 func TestAuditLogEmitted(t *testing.T) {
 	var buf strings.Builder
-	a := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{rc: threeChunkContext()}), newJSONLogger(&buf))
+	a := NewOpenCodeAdapter(NewGRPCSource(&mockKernel{rc: threeChunkContext()}), nil, newJSONLogger(&buf))
 	_ = a.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-1"})
 	_, _ = a.SessionStart(context.Background(), HookEvent{SessionID: "s-3", WorkspaceID: "ws-1"})
 	_, _ = a.SessionEnd(context.Background(), HookEvent{SessionID: "s-3", WorkspaceID: "ws-1"})
@@ -223,7 +223,7 @@ func TestPolicyAllowAll(t *testing.T) {
 }
 
 func TestName(t *testing.T) {
-	if NewOpenCodeAdapter(nil, nil).Name() != "opencode" {
+	if NewOpenCodeAdapter(nil, nil, nil).Name() != "opencode" {
 		t.Fatal("Name() must be opencode")
 	}
 }

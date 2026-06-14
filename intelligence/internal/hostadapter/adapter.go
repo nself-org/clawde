@@ -90,6 +90,20 @@ type AdapterConfig struct {
 	MaxContextTokens int
 }
 
+// ContextCompiler is the seam over compiler.Compiler used in adapters. It
+// satisfies *compiler.Compiler in production (via compilerHook in
+// compiler_hook.go); tests inject a lightweight mock without pulling in
+// compiler's CGo transitive dependency chain.
+//
+// SPORT: REGISTRY-FUNCTIONS.md → hostadapter.ContextCompiler.
+type ContextCompiler interface {
+	// PreWarmSession pre-warms the context cache for the given workspaceID
+	// synchronously under a caller-supplied context (2s deadline). It MUST
+	// never block longer than that — graceful-degrade only.
+	// Returns true when the compile produced enriched context.
+	PreWarmSession(ctx context.Context, workspaceID string) bool
+}
+
 // ContextSource is the retrieval seam an adapter depends on. The production
 // implementation is a gRPC client to 127.0.0.1:8090; tests inject an
 // in-process mock. This indirection keeps the adapter unit-testable without a

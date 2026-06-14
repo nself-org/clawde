@@ -25,6 +25,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nself-org/clawde/intelligence/internal/compiler"
+	"github.com/nself-org/clawde/intelligence/internal/docs"
 	gw "github.com/nself-org/clawde/intelligence/internal/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -47,9 +49,17 @@ type Config struct {
 	// Never log this value.
 	HMACSecret []byte
 	// Providers is the list of gateway providers to route to and health-check.
+	// Used by healthHandler and as the primary()-fallback when Registry is nil.
 	Providers []gw.Provider
+	// Registry is the parsed model registry used for RouteRequest + WithFailover
+	// dispatch in Complete() and Embed(). May be nil; when nil, Complete/Embed
+	// fall back to primary() (providers[0]).
+	Registry *gw.Registry
 	// Env is "production" | "dev" | "test"; controls reflection.
 	Env string
+	// Compiler is the auto-context compiler. May be nil; when nil,
+	// CompileContext returns an unenriched response (graceful degradation per ADR-001).
+	Compiler *compiler.Compiler
 }
 
 // DefaultConfig returns a Config populated from canonical defaults and env vars.
@@ -96,9 +106,19 @@ func (s *Server) Start() error {
 		grpc.StreamInterceptor(StreamHMACInterceptor(secret)),
 	)
 
+	// Build the IngestDocURL handler (delegated from GatewayServiceServer.IngestDocURL).
+	// TODO: wire pgx.Pool for DB queries (depends on T07 database wiring).
+	// For now: pass nil for trust, policy, supplyChain, fetcher, enqueuer so the
+	// service starts and returns codes.Unavailable gracefully (per ADR-001).
+	clientID := os.Getenv("CLAWDE_CLIENT_ID")
+	ingestor := docs.NewKBIngestor(nil, nil, nil, nil, nil)
+
 	handler := &gatewayHandler{
 		providers: s.cfg.Providers,
+		registry:  s.cfg.Registry, // nil-safe: Complete/Embed fall back to primary()
 		health:    newHealthHandler(s.cfg.Providers),
+		compiler:  s.cfg.Compiler,
+		ingestor:  NewDocIngestHandler(ingestor, clientID),
 	}
 	RegisterGatewayServiceServer(s.grpcSrv, handler)
 
@@ -265,7 +285,7 @@ type httpStreamServer struct {
 	grpc.ServerStream // embedded for interface satisfaction; unused methods panic.
 }
 
-func (s *httpStreamServer) Send(chunk *StreamChunkMsg) error {
+func (s *httpStreamServer) Send(chunk *StreamChunk) error {
 	b, err := json.Marshal(chunk)
 	if err != nil {
 		return err

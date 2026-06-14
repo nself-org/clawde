@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -32,7 +33,7 @@ func (m *mcpMockSource) Ping(_ context.Context) error { return m.healthy }
 
 func newTestServer(t *testing.T, clientID string, src ContextSource) *MCPServer {
 	t.Helper()
-	adapter := NewClaudeCodeAdapter(src, nil)
+	adapter := NewClaudeCodeAdapter(src, nil, nil)
 	if err := adapter.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-1"}); err != nil {
 		t.Fatalf("install: %v", err)
 	}
@@ -110,7 +111,7 @@ func TestMCPToolsCallRetrieveContext(t *testing.T) {
 
 func TestMCPDenyByDefaultUnknownClient(t *testing.T) {
 	// Server trusts only "trusted-id"; the actual identity is "intruder".
-	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, nil)
+	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, nil, nil)
 	_ = adapter.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-1"})
 	s := NewMCPServer(adapter, "trusted-id")
 	s.clientID = "intruder" // simulate an untrusted client_id resolved by clawd.
@@ -142,7 +143,7 @@ func TestMCPDenyUnknownTool(t *testing.T) {
 
 func TestClaudeCodeAdapterSixMethodCompliance(t *testing.T) {
 	// Compile-time guarantee from var _ HostAdapter; assert behavior at runtime.
-	var a HostAdapter = NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}, healthy: nil}, nil)
+	var a HostAdapter = NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}, healthy: nil}, nil, nil)
 	if a.Name() != ccHostName {
 		t.Errorf("Name() = %q, want %q", a.Name(), ccHostName)
 	}
@@ -168,7 +169,7 @@ func TestClaudeCodeAdapterSixMethodCompliance(t *testing.T) {
 func TestMCPAuditLine(t *testing.T) {
 	var buf strings.Builder
 	logger := newJSONLogger(&buf)
-	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, logger)
+	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, nil, logger)
 	_ = adapter.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-9"})
 	if _, err := adapter.SessionStart(context.Background(), HookEvent{SessionID: "sess-7", WorkspaceID: "ws-9"}); err != nil {
 		t.Fatalf("SessionStart: %v", err)
@@ -178,6 +179,65 @@ func TestMCPAuditLine(t *testing.T) {
 		if !strings.Contains(out, field) {
 			t.Errorf("audit line missing %s\nlog: %s", field, out)
 		}
+	}
+}
+
+// ── QA-B: ContextCompiler (compiler.SessionStart) invocation ─────────────────
+
+// stubContextCompiler implements ContextCompiler for testing. It records how
+// many times PreWarmSession was called and the workspaceID passed on each call.
+// No compiler or tiktoken dependency — purely in-process.
+type stubContextCompiler struct {
+	calls  atomic.Int64
+	lastWS string
+}
+
+func (s *stubContextCompiler) PreWarmSession(_ context.Context, workspaceID string) bool {
+	s.calls.Add(1)
+	s.lastWS = workspaceID
+	return true
+}
+
+// TestClaudeCodeAdapter_CompilerSessionStartCalled verifies that injecting a
+// non-nil ContextCompiler causes SessionStart to invoke PreWarmSession (i.e.
+// compiler.SessionStart) exactly once with the workspaceID from the HookEvent.
+//
+// QA-B: inject stub ContextCompiler, call adapter.SessionStart, assert
+// PreWarmSession invoked once with the correct workspaceID.
+func TestClaudeCodeAdapter_CompilerSessionStartCalled(t *testing.T) {
+	stub := &stubContextCompiler{}
+	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, stub, nil)
+	if err := adapter.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-qab"}); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	_, err := adapter.SessionStart(context.Background(), HookEvent{
+		SessionID: "s-qab", WorkspaceID: "ws-qab",
+	})
+	if err != nil {
+		t.Fatalf("SessionStart: %v", err)
+	}
+
+	if n := stub.calls.Load(); n != 1 {
+		t.Errorf("PreWarmSession (compiler.SessionStart) calls = %d, want 1", n)
+	}
+	if stub.lastWS != "ws-qab" {
+		t.Errorf("PreWarmSession workspaceID = %q, want %q", stub.lastWS, "ws-qab")
+	}
+}
+
+// TestClaudeCodeAdapter_NilCompiler_NoPanic verifies that a nil ContextCompiler
+// in ClaudeCodeAdapter.SessionStart does not panic (graceful-degrade, ADR-001).
+func TestClaudeCodeAdapter_NilCompiler_NoPanic(t *testing.T) {
+	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, nil, nil)
+	if err := adapter.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-nil"}); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+	// Must not panic.
+	if _, err := adapter.SessionStart(context.Background(), HookEvent{
+		SessionID: "s-nil", WorkspaceID: "ws-nil",
+	}); err != nil {
+		t.Fatalf("SessionStart with nil compiler: %v", err)
 	}
 }
 

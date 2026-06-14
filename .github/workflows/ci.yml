@@ -213,6 +213,59 @@ jobs:
           exit $STATUS
         working-directory: apps/daemon
 
+  # ─── Intelligence: Go build + test + proto-drift check ───────────
+  # Validates that gateway.pb.go / gateway_grpc.pb.go are up to date with
+  # proto/gateway.proto. If `make proto` produces a diff, the check fails.
+  intelligence:
+    name: Intelligence · Go build + test + proto-drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+          cache-dependency-path: intelligence/go.sum
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Install Go proto plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./... -count=1 -race -timeout 120s
+
+      - name: Proto drift check
+        run: |
+          make proto
+          # Fail only on FUNCTIONAL proto drift. The generated files carry a
+          # "// protoc vX.Y.Z" / "// protoc-gen-go vA.B.C" header that varies
+          # with the local generator version vs the CI apt protoc; that comment
+          # noise must not fail the gate (it is not a contract change).
+          DRIFT=$(git diff -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go \
+            | grep -E '^[+-]' | grep -vE '^[+-]{3} ' \
+            | grep -viE '//[[:space:]]*(protoc|protoc-gen-go|protoc-gen-go-grpc)[[:space:]]+v' || true)
+          if [ -n "$DRIFT" ]; then
+            echo "::error::Functional proto drift detected (regenerate with 'make proto' and commit):"
+            git --no-pager diff -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go
+            exit 1
+          fi
+          echo "No functional proto drift (generator version-comment differences ignored)."
+
   # ─── Rust format check ────────────────────────────────────────────
   rust-fmt:
     name: Rust · rustfmt

@@ -17,21 +17,23 @@
 
 PROTO_SRC  := proto/gateway.proto
 PROTO_OUT  := internal/server
-GOOGLEAPIS := $(shell go env GOPATH)/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@*/third_party/googleapis
+# googleapis: use the bundled path from grpc-gateway v1 (contains google/api/*.proto).
+# grpc-gateway v2 dropped third_party/googleapis; use v1 for these well-known protos.
+GOOGLEAPIS := $(shell go env GOPATH)/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis
 
 .PHONY: proto build test lint clean eval-smoke eval eval-gate eval-bench
 
 ## proto: regenerate gRPC + grpc-gateway stubs from proto/gateway.proto
 proto:
 	@echo "Generating protobuf stubs..."
-	protoc \
+	PATH="$$(go env GOPATH)/bin:$$PATH" protoc \
 		-I proto \
 		-I $(GOOGLEAPIS) \
 		--go_out=$(PROTO_OUT) --go_opt=paths=source_relative \
 		--go-grpc_out=$(PROTO_OUT) --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=$(PROTO_OUT) --grpc-gateway_opt=paths=source_relative \
 		$(PROTO_SRC)
-	@echo "Done. Replace internal/server/gateway_grpc_gen.go with generated files."
+	@echo "Done. Generated stubs in $(PROTO_OUT)."
 
 ## build: compile all packages
 build:
@@ -74,6 +76,8 @@ eval-gate:
 		--gemini eval/testdata/result_gemini.json
 	@echo "eval-gate PASSED"
 
-## clean: remove generated artifacts
+## clean: remove generated protobuf artifacts
 clean:
 	find $(PROTO_OUT) -name "*.pb.go" -delete
+	find $(PROTO_OUT) -name "*_grpc.pb.go" -delete
+	find $(PROTO_OUT) -name "*.pb.gw.go" -delete

@@ -44,6 +44,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/nself-org/clawde/intelligence/internal/auth"
@@ -92,6 +93,9 @@ type PublicConfig struct {
 	Policy *PolicyEngine
 	// Redis is the rate-limit backend (nil → rate limit skipped with allow).
 	Redis redis.Cmdable
+	// PgPool is the pgx connection pool used for gate 5 (trust-registry).
+	// nil = dev mode (trust gate logs warning and returns Trusted:true).
+	PgPool *pgxpool.Pool
 }
 
 // DefaultPublicAddr returns the listen address derived from CLAWDE_PUBLIC_API_PORT
@@ -113,10 +117,15 @@ type PublicServer struct {
 }
 
 // NewPublicServer creates a PublicServer; does not start listeners.
+// If cfg.PgPool is set, it is wired into the process-wide TrustRegistry so that
+// gate 5 (trust-registry) performs real DB lookups. nil pool = dev mode (allow all
+// with a log warning).
 func NewPublicServer(cfg PublicConfig) *PublicServer {
 	if cfg.Addr == "" {
 		cfg.Addr = DefaultPublicAddr()
 	}
+	// Wire pgx pool into the trust-registry gate (gate 5).
+	SetDefaultTrustRegistry(NewTrustRegistry(cfg.PgPool))
 	return &PublicServer{cfg: cfg}
 }
 
