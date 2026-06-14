@@ -252,7 +252,19 @@ jobs:
       - name: Proto drift check
         run: |
           make proto
-          git diff --exit-code -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go
+          # Fail only on FUNCTIONAL proto drift. The generated files carry a
+          # "// protoc vX.Y.Z" / "// protoc-gen-go vA.B.C" header that varies
+          # with the local generator version vs the CI apt protoc; that comment
+          # noise must not fail the gate (it is not a contract change).
+          DRIFT=$(git diff -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go \
+            | grep -E '^[+-]' | grep -vE '^[+-]{3} ' \
+            | grep -viE '//[[:space:]]*(protoc|protoc-gen-go|protoc-gen-go-grpc)[[:space:]]+v' || true)
+          if [ -n "$DRIFT" ]; then
+            echo "::error::Functional proto drift detected (regenerate with 'make proto' and commit):"
+            git --no-pager diff -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go
+            exit 1
+          fi
+          echo "No functional proto drift (generator version-comment differences ignored)."
 
   # ─── Rust format check ────────────────────────────────────────────
   rust-fmt:
