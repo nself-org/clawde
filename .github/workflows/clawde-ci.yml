@@ -1,0 +1,130 @@
+name: clawde-intelligence CI
+
+# PTY pool + seccomp integration tests for the intelligence Go service.
+# Runs on ubuntu-latest (Linux) where seccomp-BPF is available.
+# See: internal/pty/pool_test.go, internal/sandbox/security_test.go
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'intelligence/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'intelligence/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Unit tests: PTY pool + sandbox (all platforms) ───────────────────────────
+  pty-sandbox-unit:
+    name: PTY pool + sandbox unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+
+      - name: Run PTY pool tests (race detector)
+        run: go test ./internal/pty/... -count=1 -race -timeout 120s
+
+      - name: Run sandbox tests (race detector)
+        run: go test ./internal/sandbox/... -count=1 -race -timeout 120s
+
+  # ── Integration test: seccomp-BPF install on Linux runner ────────────────────
+  seccomp-integration:
+    name: seccomp-BPF integration (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+
+      - name: Run seccomp integration test
+        env:
+          CLAWDE_SANDBOX_ENABLED: "1"
+        run: go test ./internal/sandbox/... -tags seccomp -run TestSeccompBPFInstall -count=1 -timeout 60s -v
+
+  # ── Full build check (no seccomp tag — default) ──────────────────────────────
+  build-default:
+    name: go build ./... (default, no seccomp tag)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+
+      - name: Build all packages
+        run: go build ./...
+
+  # ── Full build check (seccomp tag — production Linux) ───────────────────────
+  build-seccomp:
+    name: go build ./... (-tags seccomp, Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+
+      - name: Build all packages (seccomp tag)
+        run: go build -tags seccomp ./...
+
+  # ── E2E integration test lane: full organism (T01–T12 wired) ─────────────────
+  integration:
+    name: Integration tests — full organism E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip gracefully when the secret is not configured (forks, dependabot PRs).
+    # Jobs with unset secrets evaluate the env var to an empty string, so the
+    # test suite's requirePG() skips each test individually.
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+          cache-dependency-path: intelligence/go.sum
+
+      - name: Run organism integration tests
+        env:
+          CLAWDE_TEST_PG_DSN: ${{ secrets.CLAWDE_TEST_PG_DSN }}
+          CLAWDE_AUTO_CONTEXT: "true"
+        run: |
+          go test -tags integration -timeout 300s -count=1 -v \
+            ./test/integration/...
