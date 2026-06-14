@@ -73,6 +73,13 @@ func LoadRegistry(path string) (*Registry, error) {
 	return parseRegistry(data)
 }
 
+// LoadRegistryFromYAML parses raw YAML bytes and returns a *Registry.
+// Equivalent to LoadRegistry but accepts bytes directly (useful for tests and
+// in-process configuration without a filesystem file).
+func LoadRegistryFromYAML(data []byte) (*Registry, error) {
+	return parseRegistry(data)
+}
+
 // parseRegistry parses raw YAML bytes. Split from LoadRegistry for testability.
 func parseRegistry(data []byte) (*Registry, error) {
 	var doc registryFile
