@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -65,21 +66,137 @@ func (s *stubRecorder) Record(_ context.Context, _ uuid.UUID, result eval.EvalRe
 }
 
 func newTestActivities(kernel HybridKerneler, recorder EvalRecorder) *Activities {
-	return NewActivities(kernel, &stubRunner{}, nil, recorder)
+	// gwClient is nil — LLMCallActivity will use stub fallback with log.Warn.
+	return NewActivities(kernel, &stubRunner{}, nil, recorder, nil)
 }
 
 // newEnv creates a TestWorkflowEnvironment with all orchestration
 // workflows and activities registered.
+//
+// Activities are registered individually (not via struct pointer) to avoid
+// Temporal's validation panic on exported fluent helpers (WithPTYPool,
+// WithToolRegistry) that return *Activities, not error.
+// stubLLMActivity and stubToolDispatchActivity are kept registered so
+// existing OnActivity mock helpers still compile; the workflow itself
+// calls LLMCallActivity / ToolDispatchActivity by registered name.
 func newEnv(acts *Activities) *testsuite.TestWorkflowEnvironment {
 	var s testsuite.WorkflowTestSuite
 	env := s.NewTestWorkflowEnvironment()
 	env.RegisterWorkflow(RetrieveContextWorkflow)
 	env.RegisterWorkflow(AgentRunWorkflow)
 	env.RegisterWorkflow(EvalWorkflow)
-	env.RegisterActivity(acts)
+	// Register activity methods individually to avoid Temporal panicking on
+	// fluent helpers (WithPTYPool / WithToolRegistry) that have non-error returns.
+	env.RegisterActivity(acts.FetchDiffActivity)
+	env.RegisterActivity(acts.RetrieveContextActivity)
+	env.RegisterActivity(acts.RerankActivity)
+	env.RegisterActivity(acts.RunAnalysisActivity)
+	env.RegisterActivity(acts.ListSymbolsActivity)
+	env.RegisterActivity(acts.GetFileContentActivity)
+	env.RegisterActivity(acts.ExecuteShellActivity)
+	env.RegisterActivity(acts.InsertEvalRunActivity)
+	env.RegisterActivity(acts.LLMCallActivity)
+	env.RegisterActivity(acts.ToolDispatchActivity)
 	env.RegisterActivity(stubLLMActivity)
 	env.RegisterActivity(stubToolDispatchActivity)
 	return env
+}
+
+// ── 0. ToolDispatchActivity — real registry dispatch ─────────────────────────
+
+// TestToolDispatchActivity_RealDispatch_KnownTool verifies that ToolDispatchActivity
+// calls the registered dispatch handler (not a stub) when the tool is known.
+// Acceptance criterion: "Real registry dispatch" is TRUE.
+func TestToolDispatchActivity_RealDispatch_KnownTool(t *testing.T) {
+	t.Parallel()
+	acts := newTestActivities(&stubKernel{}, nil)
+	reg := NewToolRegistry(acts)
+	acts.WithToolRegistry(reg)
+
+	// get_file_content is a built-in with a real handler. We use a file that is
+	// guaranteed to exist (this very test file via os.Args or a temp file).
+	tmpDir := t.TempDir()
+	tmpFile := tmpDir + "/probe.txt"
+	if err := os.WriteFile(tmpFile, []byte("real dispatch works"), 0o600); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	result, err := acts.ToolDispatchActivity(context.Background(), StubToolDispatchInput{
+		ToolName: ToolGetFileContent,
+		Input:    map[string]any{"file_path": tmpFile},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if result != "real dispatch works" {
+		t.Fatalf("expected file content %q, got %q", "real dispatch works", result)
+	}
+}
+
+// TestToolDispatchActivity_UnknownTool verifies that ToolDispatchActivity returns
+// ErrUnknownTool (typed sentinel) when the requested tool is not in the registry.
+func TestToolDispatchActivity_UnknownTool(t *testing.T) {
+	t.Parallel()
+	acts := newTestActivities(&stubKernel{}, nil)
+	reg := NewToolRegistry(acts)
+	acts.WithToolRegistry(reg)
+
+	_, err := acts.ToolDispatchActivity(context.Background(), StubToolDispatchInput{
+		ToolName: "no_such_tool",
+		Input:    map[string]any{},
+	})
+	if err == nil {
+		t.Fatal("expected error for unknown tool, got nil")
+	}
+	if !errors.Is(err, ErrUnknownTool) {
+		t.Fatalf("expected ErrUnknownTool, got: %v", err)
+	}
+}
+
+// TestToolDispatchActivity_NilRegistry verifies that ToolDispatchActivity returns
+// ErrUnknownTool when called without a wired ToolRegistry.
+func TestToolDispatchActivity_NilRegistry(t *testing.T) {
+	t.Parallel()
+	acts := newTestActivities(&stubKernel{}, nil)
+	// No WithToolRegistry call — registry is nil.
+
+	_, err := acts.ToolDispatchActivity(context.Background(), StubToolDispatchInput{
+		ToolName: ToolGetFileContent,
+		Input:    map[string]any{},
+	})
+	if err == nil {
+		t.Fatal("expected error with nil registry, got nil")
+	}
+	if !errors.Is(err, ErrUnknownTool) {
+		t.Fatalf("expected ErrUnknownTool, got: %v", err)
+	}
+}
+
+// TestToolDispatchActivity_CustomToolWithHandler verifies that a custom tool
+// registered with a ToolDispatchFn is reachable via ToolDispatchActivity.
+func TestToolDispatchActivity_CustomToolWithHandler(t *testing.T) {
+	t.Parallel()
+	acts := newTestActivities(&stubKernel{}, nil)
+	reg := NewToolRegistry(acts)
+	acts.WithToolRegistry(reg)
+
+	customHandler := func(_ context.Context, _ map[string]any) (string, error) {
+		return "custom tool result", nil
+	}
+	if err := reg.RegisterTool("my_custom_tool", func() string { return "ok" }, customHandler); err != nil {
+		t.Fatalf("RegisterTool: %v", err)
+	}
+
+	result, err := acts.ToolDispatchActivity(context.Background(), StubToolDispatchInput{
+		ToolName: "my_custom_tool",
+		Input:    map[string]any{"key": "value"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "custom tool result" {
+		t.Fatalf("expected %q, got %q", "custom tool result", result)
+	}
 }
 
 // ── 1. ToolRegistry tests ─────────────────────────────────────────────────────
@@ -296,7 +413,8 @@ func TestAgentRunWorkflow_NoToolCall_StopsAfterOneTurn(t *testing.T) {
 	mockLLM := func(ctx context.Context, in StubLLMInput) (AgentMessage, error) {
 		return AgentMessage{Role: "assistant", Content: "done"}, nil
 	}
-	env.OnActivity(stubLLMActivity, mock.Anything, mock.Anything).Return(mockLLM)
+	// Mock the real registered activity name (LLMCallActivity on *Activities).
+	env.OnActivity("LLMCallActivity", mock.Anything, mock.Anything).Return(mockLLM)
 
 	env.ExecuteWorkflow(AgentRunWorkflow, AgentRunInput{
 		ModelLane:       "sonnet",
@@ -329,12 +447,14 @@ func TestAgentRunWorkflow_ToolCallTurn(t *testing.T) {
 		}
 		return AgentMessage{Role: "assistant", Content: "done"}, nil
 	}
-	env.OnActivity(stubLLMActivity, mock.Anything, mock.Anything).Return(mockLLM)
+	// Mock the real registered activity name (LLMCallActivity on *Activities).
+	env.OnActivity("LLMCallActivity", mock.Anything, mock.Anything).Return(mockLLM)
 
 	mockDispatch := func(ctx context.Context, in StubToolDispatchInput) (string, error) {
 		return fmt.Sprintf("result for %s", in.ToolName), nil
 	}
-	env.OnActivity(stubToolDispatchActivity, mock.Anything, mock.Anything).Return(mockDispatch)
+	// Mock the real registered activity name (ToolDispatchActivity on *Activities).
+	env.OnActivity("ToolDispatchActivity", mock.Anything, mock.Anything).Return(mockDispatch)
 
 	env.ExecuteWorkflow(AgentRunWorkflow, AgentRunInput{
 		ModelLane:       "sonnet",
