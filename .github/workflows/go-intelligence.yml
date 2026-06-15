@@ -1,0 +1,35 @@
+name: Go Intelligence Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'intelligence/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'intelligence/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-intelligence:
+    name: Intelligence Go Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: intelligence
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: intelligence/go.mod
+          cache: true
+
+      - name: Run Go tests with race detector
+        run: go test -race -timeout 10m ./...
