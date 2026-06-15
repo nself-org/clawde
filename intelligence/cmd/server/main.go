@@ -111,7 +111,7 @@ func main() {
 	} else {
 		logger.Info("PTY pool skipped: CLAWDE_SANDBOX_ENABLED not set")
 	}
-	_ = ptyPool // ptyPool wired into Activities via WithPTYPool when Temporal worker is added
+	_ = ptyPool // ptyPool wired into Activities via SetPTYPool when Temporal worker is added
 
 	// ── pgmq worker pool (optional — requires CLAWDE_PG_DSN) ─────────────────
 	// When DSN is set: connect, wire the QueueStore, register handlers, start pool.

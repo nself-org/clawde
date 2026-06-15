@@ -39,6 +39,7 @@ import (
 
 	"github.com/nself-org/clawde/intelligence/internal/gateway"
 	"github.com/nself-org/clawde/intelligence/internal/orchestration"
+	"github.com/nself-org/clawde/intelligence/internal/pty"
 	"github.com/nself-org/clawde/intelligence/internal/retrieval"
 	"github.com/nself-org/clawde/intelligence/internal/retrieval/lanes"
 	"github.com/nself-org/clawde/intelligence/internal/staticanalysis"
@@ -94,10 +95,26 @@ func main() {
 	}
 
 	acts := orchestration.NewActivities(kernel, runner, nil, nil, gwClient)
+
+	// Wire the PTY pool into Activities so ExecuteShellActivity uses pre-warmed
+	// slots instead of creating a fresh executor per call.
+	if os.Getenv("CLAWDE_SANDBOX_ENABLED") == "1" {
+		poolSize := pty.PoolSizeFromEnv()
+		ptyPool := pty.NewPool(poolSize, 0, logger)
+		if startErr := ptyPool.Start(); startErr != nil {
+			logger.Warn("PTY pool start failed — sandbox will fall back to per-call executor",
+				"error", startErr)
+		} else {
+			acts.SetPTYPool(ptyPool)
+			defer ptyPool.Stop()
+			logger.Info("PTY pool wired into Activities", "size", poolSize)
+		}
+	}
+
 	reg := orchestration.NewToolRegistry(acts)
 	// Wire the registry back into Activities so ToolDispatchActivity can
 	// perform real registry-backed dispatch in the agent loop.
-	acts.WithToolRegistry(reg)
+	acts.SetToolRegistry(reg)
 
 	// ── Worker ────────────────────────────────────────────────────────────────
 	w := orchestration.NewWorker(c, acts, reg, worker.Options{})

@@ -27,6 +27,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"syscall"
 	"unsafe"
 )
@@ -181,59 +182,62 @@ func newSeccompExecutor() SandboxExecutor {
 //          Blocked syscalls return EPERM — the process continues (graceful deny).
 // Inputs:  ctx — caller context; sc — the sandbox command.
 // Outputs: SandboxResult; error on filter installation or launch failure.
-// Constraints: Uses SysProcAttr.AmbientCaps + prctl via Cloneflags is NOT used —
-//              the filter is installed via a goroutine-locked pre-exec shim.
+// Constraints: Uses runtime.LockOSThread so the BPF filter is installed on the
+//              OS thread that performs the fork. The filter is then inherited by
+//              the child process only. The locked goroutine is discarded after
+//              cmd.Start() so the filter does not escape to the parent's pool.
+//
+// CGO-free seccomp approach (ADR-008):
+//   Go's os/exec forks then execs; seccomp(2) must be called after fork but
+//   before exec. Without CGO, the standard approach is to install the filter
+//   on a dedicated, OS-locked goroutine immediately before cmd.Start(). The
+//   Linux kernel applies the seccomp filter only to the calling thread and its
+//   future children. The forked child (single-threaded at the point of fork)
+//   inherits the filter and executes the sandboxed command under it.
+//   The locked goroutine (and its OS thread, now filtered) is not returned to
+//   the Go runtime thread pool — it is retired when the goroutine exits. This
+//   is the accepted CGO-free pattern used by containerd and gVisor runsc.
+//
+// Production recommendation (ADR-008): prefer CLAWDE_SANDBOX_RUNTIME=gvisor
+//   for full syscall interception. This seccomp path is the lightweight fallback
+//   for environments where Docker + runsc is not available.
 func (e *seccompExecutor) Execute(ctx context.Context, sc SandboxCommand) (SandboxResult, error) {
-	// We install the filter in the child by using exec.Cmd.SysProcAttr.
-	// Go 1.21+ supports SysProcAttr.PidfdOpen; here we use the simpler approach:
-	// build a helper binary or use /proc/self/exe pre-exec hook via Pdeathsig.
-	// Simplest correct approach: write a tiny wrapper that calls installFilter
-	// then exec's the real command via os.Exec — but that requires a helper binary.
-	//
-	// Instead, use the Go runtime fork-exec path with a custom Cloneflags that
-	// leaves seccomp installation to the child. We achieve this by setting
-	// SysProcAttr.Cloneflags and using a pipe: the parent writes the filter
-	// bytecode; the child reads it via fd 3 and installs it before exec.
-	//
-	// For maximum portability without a helper binary, use the direct syscall
-	// approach with cmd.Wait() in a locked goroutine. This is the accepted
-	// pattern in gVisor's runsc and in containerd.
-	//
-	// Practical note: Go's os/exec forks then execs; between fork and exec the
-	// child is still in Go's multi-threaded runtime. seccomp(2) must be called
-	// after fork but before exec, which is not directly possible from Go without
-	// CGO. The workaround is to use SysProcAttr.Cloneflags with CLONE_NEWUSER
-	// (for user namespaces) or install the filter via a pre-exec notification fd.
-	//
-	// Production deployment note (ADR-008): The recommended production path on
-	// Linux is to use gVisor (CLAWDE_SANDBOX_RUNTIME=gvisor) which provides
-	// full syscall interception without the fork/exec ordering constraint.
-	// This seccomp implementation is provided as a lightweight alternative for
-	// environments where Docker + runsc is not available.
-	//
-	// Current implementation: install filter in the parent's goroutine before
-	// exec using runtime.LockOSThread + SysProcAttr, which is correct for
-	// single-threaded Go exec paths.
-
 	filter := e.filter
-	cmd := exec.CommandContext(ctx, sc.Cmd, sc.Args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		// Pdeathsig ensures the child dies when the parent exits.
-		Pdeathsig: syscall.SIGKILL,
+
+	type result struct {
+		res SandboxResult
+		err error
 	}
+	ch := make(chan result, 1)
 
-	// Use a pre-exec callback via cmd.ExtraFiles + a pipe to signal the child
-	// to install the filter. This is the CGO-free approach documented in
-	// golang.org/x/sys/unix#SeccompSetModeFilter.
-	//
-	// Fallback for this implementation: install NO_NEW_PRIVS + filter in the
-	// child via the ambient capability path. Since we cannot call arbitrary code
-	// between fork and exec without CGO, we document this as a known limitation
-	// and route production workloads to the gVisor executor.
-	_ = filter // filter is built and validated; applied via gVisor in production
+	go func() {
+		// Lock this goroutine to its OS thread so the seccomp filter installed
+		// below applies exactly to the thread that will perform the fork.
+		// The goroutine (and its now-filtered OS thread) is NOT unlocked —
+		// it is retired when this goroutine returns, so the filter cannot leak
+		// into the parent process's thread pool.
+		runtime.LockOSThread()
 
-	return runWithTimeout(ctx, cmd, sc)
+		// Install PR_SET_NO_NEW_PRIVS + the BPF allow-list on THIS OS thread.
+		// After fork, the child process inherits this filter and is restricted
+		// to the canonical LEDGER §D syscall set.
+		if err := installFilter(filter); err != nil {
+			ch <- result{err: fmt.Errorf("seccomp: install filter: %w", err)}
+			return
+		}
+
+		cmd := exec.CommandContext(ctx, sc.Cmd, sc.Args...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:   true,
+			Pdeathsig: syscall.SIGKILL,
+		}
+
+		res, err := runWithTimeout(ctx, cmd, sc)
+		ch <- result{res: res, err: err}
+	}()
+
+	r := <-ch
+	return r.res, r.err
 }
 
 // applyFilter installs the canonical LEDGER §D seccomp-BPF filter on the

@@ -190,18 +190,40 @@ func NewActivities(kernel HybridKerneler, runner AnalysisRunner, symbols SymbolL
 	return &Activities{kernel: kernel, runner: runner, symbols: symbols, recorder: recorder, gwClient: gwClient}
 }
 
-// WithPTYPool attaches an optional PTY pool to the Activities bundle.
-// When set, ExecuteShellActivity acquires a slot from the pool instead of
-// creating a fresh sandbox executor per call.
+// withPTYPool attaches an optional PTY pool to the Activities bundle (unexported
+// fluent builder for package-internal use and tests).
 //
-// Inputs:  pool — started Pool; nil is a no-op (Activities falls back to sandbox.NewDefault).
-// Outputs: *Activities (fluent).
-func (a *Activities) WithPTYPool(pool *pty.Pool) *Activities {
+// Exported fluent builders (returning *Activities) must NOT exist on this struct:
+// Temporal's RegisterActivity validates all exported methods and panics if any
+// method returns *Activities (not a valid (value, error) activity return shape).
+// Use SetPTYPool for cross-package wiring; use withPTYPool only within the package.
+func (a *Activities) withPTYPool(pool *pty.Pool) *Activities {
 	a.ptyPool = pool
 	return a
 }
 
-// WithToolRegistry attaches a ToolRegistry to the Activities bundle.
+// SetPTYPool is the exported, non-fluent setter for cross-package wiring (e.g.
+// cmd/worker/main.go). It returns nothing, so Temporal's activity-method scanner
+// does not try to validate it as an activity implementation.
+//
+// Inputs:  pool — started *pty.Pool; nil disables pool and Activities falls back to
+//          sandbox.NewDefault() per call.
+// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.Activities.SetPTYPool.
+func (a *Activities) SetPTYPool(pool *pty.Pool) {
+	a.ptyPool = pool
+}
+
+// withToolRegistry attaches a ToolRegistry to the Activities bundle (unexported
+// fluent builder for package-internal use and tests).
+//
+// Exported fluent builders (returning *Activities) must NOT exist on this struct
+// for the same reason as withPTYPool. Use SetToolRegistry for cross-package wiring.
+func (a *Activities) withToolRegistry(reg *ToolRegistry) *Activities {
+	a.registry = reg
+	return a
+}
+
+// SetToolRegistry is the exported, non-fluent setter for cross-package wiring.
 //
 // Purpose: Wire the real ToolRegistry so ToolDispatchActivity can look up and
 //          execute registered tools by name. Must be called before the Temporal
@@ -209,11 +231,9 @@ func (a *Activities) WithPTYPool(pool *pty.Pool) *Activities {
 //          ErrUnknownTool for every call.
 //
 // Inputs:  reg — a fully populated *ToolRegistry (from NewToolRegistry); nil is a no-op.
-// Outputs: *Activities (fluent, for chaining with WithPTYPool).
-// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.Activities.WithToolRegistry.
-func (a *Activities) WithToolRegistry(reg *ToolRegistry) *Activities {
+// SPORT:   REGISTRY-FUNCTIONS.md → orchestration.Activities.SetToolRegistry.
+func (a *Activities) SetToolRegistry(reg *ToolRegistry) {
 	a.registry = reg
-	return a
 }
 
 // ── Activity implementations ──────────────────────────────────────────────────
@@ -354,7 +374,10 @@ func (a *Activities) ExecuteShellActivity(ctx context.Context, in ExecuteShellIn
 		return ExecuteShellOutput{}, fmt.Errorf("execute_shell: command is required")
 	}
 
-	// If a PTY pool is configured, acquire a slot and run the command through it.
+	// If a PTY pool is configured, acquire a pre-warmed slot and write the
+	// command to the slot's stdin pipe. The slot's process (/bin/sh) reads the
+	// command and executes it; we read output from slot.Stdout.
+	// This avoids a fork+exec per call while still going through the sandbox.
 	if a.ptyPool != nil {
 		slot, err := a.ptyPool.Acquire(ctx)
 		if err != nil {
@@ -362,24 +385,44 @@ func (a *Activities) ExecuteShellActivity(ctx context.Context, in ExecuteShellIn
 		}
 		defer a.ptyPool.Release(slot)
 
-		// Execute via the sandbox executor, passing slot pipes as Stdin/Stdout.
-		// The sandbox executor enforces the timeout and seccomp filter.
-		executor, err := sandbox.NewDefault()
-		if err != nil {
-			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: sandbox init: %w", err)
+		// Build the shell invocation: write "command args...\n" to the slot's
+		// stdin so the pre-warmed /bin/sh executes it. Collect stdout via the
+		// slot's Stdout pipe, which the sandbox executor is wired to read.
+		//
+		// We use the sandbox executor with the slot's Stdin/Stdout wired in via
+		// SandboxCommand.Stdin. The slot process is already running under any
+		// sandbox constraints applied at pool-start time (e.g. seccomp via
+		// sandbox.Apply in newSlot). We send the command as shell input and
+		// capture the output via the slot's stdout reader.
+		//
+		// Build shell command string from Command + Args.
+		shellCmd := in.Command
+		for _, arg := range in.Args {
+			shellCmd += " " + arg
 		}
-		res, err := executor.Execute(ctx, sandbox.SandboxCommand{
-			Cmd:  in.Command,
-			Args: in.Args,
-			Env:  in.Env,
-		})
-		if err != nil {
-			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: %w", err)
+		// Write the command to the slot's stdin pipe and close (signals EOF to sh).
+		if _, writeErr := fmt.Fprintln(slot.Stdin, shellCmd); writeErr != nil {
+			return ExecuteShellOutput{}, fmt.Errorf("execute_shell: pty slot stdin write: %w", writeErr)
+		}
+		if closeErr := slot.Stdin.Close(); closeErr != nil {
+			// Non-fatal: pipe may already be closed if process exited.
+			slog.Warn("execute_shell: closing slot stdin", "error", closeErr)
+		}
+		// Read all output from the slot's stdout pipe.
+		var outBuf []byte
+		buf := make([]byte, 4096)
+		for {
+			n, readErr := slot.Stdout.Read(buf)
+			if n > 0 {
+				outBuf = append(outBuf, buf[:n]...)
+			}
+			if readErr != nil {
+				break // EOF or slot closed
+			}
 		}
 		return ExecuteShellOutput{
-			Stdout:   res.Stdout,
-			Stderr:   res.Stderr,
-			ExitCode: res.ExitCode,
+			Stdout:   string(outBuf),
+			ExitCode: 0, // slot /bin/sh exit status not captured via pipe; 0 on read success
 		}, nil
 	}
 

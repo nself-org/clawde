@@ -111,7 +111,7 @@ func TestToolDispatchActivity_RealDispatch_KnownTool(t *testing.T) {
 	t.Parallel()
 	acts := newTestActivities(&stubKernel{}, nil)
 	reg := NewToolRegistry(acts)
-	acts.WithToolRegistry(reg)
+	acts.withToolRegistry(reg)
 
 	// get_file_content is a built-in with a real handler. We use a file that is
 	// guaranteed to exist (this very test file via os.Args or a temp file).
@@ -139,7 +139,7 @@ func TestToolDispatchActivity_UnknownTool(t *testing.T) {
 	t.Parallel()
 	acts := newTestActivities(&stubKernel{}, nil)
 	reg := NewToolRegistry(acts)
-	acts.WithToolRegistry(reg)
+	acts.withToolRegistry(reg)
 
 	_, err := acts.ToolDispatchActivity(context.Background(), StubToolDispatchInput{
 		ToolName: "no_such_tool",
@@ -178,7 +178,7 @@ func TestToolDispatchActivity_CustomToolWithHandler(t *testing.T) {
 	t.Parallel()
 	acts := newTestActivities(&stubKernel{}, nil)
 	reg := NewToolRegistry(acts)
-	acts.WithToolRegistry(reg)
+	acts.withToolRegistry(reg)
 
 	customHandler := func(_ context.Context, _ map[string]any) (string, error) {
 		return "custom tool result", nil
