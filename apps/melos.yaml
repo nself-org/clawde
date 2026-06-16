@@ -4,7 +4,7 @@ repository: https://github.com/clawde-io/apps
 packages:
   - desktop
   - mobile
-  - packages/*
+  - packages/clawd_plugin_abi
 
 command:
   version:
