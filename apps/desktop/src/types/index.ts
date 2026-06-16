@@ -76,7 +76,20 @@ export type NavRoute =
   | "packs"
   | "doctor"
   | "instructions"
+  | "oauth"
   | "settings";
+
+// ── OAuth account types ────────────────────────────────────────────────────────
+
+export type OAuthProvider = "google" | "github" | "anthropic";
+
+export interface OAuthAccount {
+  id: string;
+  provider: OAuthProvider;
+  email: string;
+  displayName?: string;
+  addedAt: string;
+}
 
 export interface DoctorCheck {
   name: string;

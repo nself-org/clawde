@@ -11,6 +11,7 @@ import type {
   DaemonStatus,
   HealthResponse,
   Metrics,
+  OAuthAccount,
   Session,
   MemoryEntry,
 } from "@/types";
@@ -66,4 +67,27 @@ export async function getMemory(): Promise<MemoryEntry[]> {
 
 export async function pickProjectFolder(): Promise<string | null> {
   return invoke<string | null>("pick_project_folder");
+}
+
+// ── OAuth account commands ─────────────────────────────────────────────────────
+
+/** List all OAuth accounts registered in the daemon. */
+export async function listOAuthAccounts(): Promise<OAuthAccount[]> {
+  return invoke<OAuthAccount[]>("list_oauth_accounts");
+}
+
+/**
+ * Initiate the OAuth flow for a provider.
+ * The daemon opens a system browser popup and handles the callback.
+ * Returns the newly added account on success.
+ */
+export async function addOAuthAccount(
+  provider: string
+): Promise<OAuthAccount> {
+  return invoke<OAuthAccount>("add_oauth_account", { provider });
+}
+
+/** Remove an OAuth account by ID. */
+export async function removeOAuthAccount(id: string): Promise<void> {
+  return invoke("remove_oauth_account", { id });
 }

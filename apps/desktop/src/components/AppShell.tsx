@@ -1,16 +1,18 @@
 /**
- * Purpose: Root layout — navigation rail (10 tabs) + routed content area + status bar.
+ * Purpose: Root layout — navigation rail (11 tabs) + routed content area + status bar.
+ *          Each route is wrapped in a per-route error boundary to isolate crashes.
  * Inputs:  currentRoute from appStore, daemonStatus for connection indicator
  * Outputs: Rendered shell with nav rail on left and active screen on right
- * Constraints: Matches Flutter NavigationRail with Doctor badge on warn/error
- * SPORT: T-E1-07
+ * Constraints: Matches Flutter NavigationRail with Doctor badge on warn/error.
+ *              Per-route error boundaries prevent one screen crash from killing the app.
+ * SPORT: T-P3-E5-W1-S2-T02 (adds oauth route + per-route error boundaries)
  */
 
-import React from "react";
+import React, { Component, ErrorInfo, ReactNode } from "react";
 import {
   MessageSquare, List, FolderOpen, GitBranch, LayoutDashboard,
   Search, Package, Stethoscope, BookOpen, Settings, Wifi, WifiOff,
-  AlertCircle,
+  AlertCircle, KeyRound, RefreshCw,
 } from "lucide-react";
 import { useAppStore } from "@/stores/appStore";
 import type { NavRoute } from "@/types";
@@ -23,7 +25,59 @@ import { SearchScreen } from "./SearchScreen";
 import { PacksScreen } from "./PacksScreen";
 import { DoctorScreen } from "./DoctorScreen";
 import { InstructionsScreen } from "./InstructionsScreen";
+import { OAuthPoolScreen } from "./OAuthPoolScreen";
 import { SettingsScreen } from "./SettingsScreen";
+
+// ── Per-route error boundary ───────────────────────────────────────────────────
+
+interface RouteErrorState { hasError: boolean; error: Error | null }
+
+class RouteErrorBoundary extends Component<
+  { route: NavRoute; children: ReactNode },
+  RouteErrorState
+> {
+  constructor(props: { route: NavRoute; children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): RouteErrorState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error(`[ClawDE] Route "${this.props.route}" crashed:`, error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="flex flex-col items-center justify-center h-full text-center p-8"
+          style={{ background: "#030712" }}
+        >
+          <AlertCircle size={28} className="text-red-400 mb-3" />
+          <div className="text-base font-semibold text-gray-200 mb-1">
+            This view crashed
+          </div>
+          <div className="text-xs text-gray-500 font-mono mb-5 max-w-md break-all">
+            {this.state.error?.message}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 transition-colors"
+          >
+            <RefreshCw size={13} />
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── Nav + screen definitions ───────────────────────────────────────────────────
 
 interface NavItem {
   route: NavRoute;
@@ -42,24 +96,36 @@ const NAV_ITEMS: NavItem[] = [
   { route: "packs", label: "Packs", icon: <Package size={20} /> },
   { route: "doctor", label: "Doctor", icon: <Stethoscope size={20} /> },
   { route: "instructions", label: "Instructions", icon: <BookOpen size={20} /> },
+  { route: "oauth", label: "OAuth", icon: <KeyRound size={20} /> },
   { route: "settings", label: "Settings", icon: <Settings size={20} /> },
 ];
 
 function ScreenContent({ route }: { route: NavRoute }) {
-  switch (route) {
-    case "chat": return <ChatScreen />;
-    case "sessions": return <SessionsScreen />;
-    case "files": return <FilesScreen />;
-    case "git": return <GitScreen />;
-    case "dashboard": return <DashboardScreen />;
-    case "search": return <SearchScreen />;
-    case "packs": return <PacksScreen />;
-    case "doctor": return <DoctorScreen />;
-    case "instructions": return <InstructionsScreen />;
-    case "settings": return <SettingsScreen />;
-    default: return <ChatScreen />;
-  }
+  const screen = (() => {
+    switch (route) {
+      case "chat": return <ChatScreen />;
+      case "sessions": return <SessionsScreen />;
+      case "files": return <FilesScreen />;
+      case "git": return <GitScreen />;
+      case "dashboard": return <DashboardScreen />;
+      case "search": return <SearchScreen />;
+      case "packs": return <PacksScreen />;
+      case "doctor": return <DoctorScreen />;
+      case "instructions": return <InstructionsScreen />;
+      case "oauth": return <OAuthPoolScreen />;
+      case "settings": return <SettingsScreen />;
+      default: return <ChatScreen />;
+    }
+  })();
+
+  return (
+    <RouteErrorBoundary route={route}>
+      {screen}
+    </RouteErrorBoundary>
+  );
 }
+
+// ── Connection status widget ───────────────────────────────────────────────────
 
 function ConnectionStatus() {
   const daemonStatus = useAppStore((s) => s.daemonStatus);
@@ -89,6 +155,8 @@ function ConnectionStatus() {
   );
 }
 
+// ── Status bar ─────────────────────────────────────────────────────────────────
+
 function StatusBar() {
   const daemonVersion = useAppStore((s) => s.daemonVersion);
   const activeProjectPath = useAppStore((s) => s.activeProjectPath);
@@ -105,6 +173,8 @@ function StatusBar() {
     </div>
   );
 }
+
+// ── Root shell ─────────────────────────────────────────────────────────────────
 
 export function AppShell() {
   const currentRoute = useAppStore((s) => s.currentRoute);
