@@ -11,44 +11,13 @@ command:
     workspaceChangelog: true
 
 scripts:
-  # ─── Desktop ─────────────────────────────────────────────────────
-  dev:
-    run: flutter run -d macos
-    exec:
-      concurrency: 1
-    packageFilters:
-      scope: "clawde"  # desktop app name
-
-  dev:linux:
-    run: flutter run -d linux
-    exec:
-      concurrency: 1
-    packageFilters:
-      scope: "clawde"
-
-  dev:windows:
-    run: flutter run -d windows
-    exec:
-      concurrency: 1
-    packageFilters:
-      scope: "clawde"
-
-  # ─── Mobile ──────────────────────────────────────────────────────
-  dev:ios:
-    run: flutter run -d ios
-    exec:
-      concurrency: 1
-    packageFilters:
-      scope: "clawde_mobile"
-
-  dev:android:
-    run: flutter run -d android
-    exec:
-      concurrency: 1
-    packageFilters:
-      scope: "clawde_mobile"
-
   # ─── Daemon ──────────────────────────────────────────────────────
+  # Flutter desktop/mobile dev + Dart workspace scripts (dev:*, get,
+  # analyze, format, test, gen) were removed after the Flutter packages
+  # were retired (S6 T-P3-E4-W3-S6-T02). Desktop is now Tauri 2 + React
+  # (apps/desktop, npm) and mobile is React Native (apps/mobile, npm) —
+  # neither is a Dart package. The melos workspace now holds only the
+  # Rust daemon; build it directly with cargo.
   dev:daemon:
     run: cargo run
     exec:
@@ -58,34 +27,3 @@ scripts:
     run: cargo build --release
     exec:
       workingDirectory: daemon
-
-  # ─── Dart workspace ──────────────────────────────────────────────
-  get:
-    run: flutter pub get
-    exec:
-      failFast: false
-
-  analyze:
-    run: flutter analyze
-    exec:
-      failFast: false
-
-  format:
-    run: dart format .
-    exec:
-      failFast: false
-
-  test:
-    run: flutter test
-    exec:
-      failFast: false
-    packageFilters:
-      dirExists: "test"
-
-  # ─── Codegen (Riverpod + JSON serialization) ─────────────────────
-  gen:
-    run: dart run build_runner build --delete-conflicting-outputs
-    exec:
-      failFast: false
-    packageFilters:
-      dependsOn: "build_runner"

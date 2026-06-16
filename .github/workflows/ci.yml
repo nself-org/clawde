@@ -12,34 +12,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─── Dart / Flutter ───────────────────────────────────────────────
-  dart:
-    name: Dart · analyze + test
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Install melos
-        run: dart pub global activate melos
-
-      - name: Bootstrap workspace
-        run: melos bootstrap
-
-      - name: Analyze
-        run: melos analyze --fatal-infos
-
-      - name: Test
-        run: melos test
-
   # ─── Desktop build check (Tauri 2 + React/Vite) ─────────────────
   # Desktop was migrated from Flutter to Tauri 2 + React (T-E1-07).
   # CI checks TypeScript compilation and Jest tests; Tauri native build
