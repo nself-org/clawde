@@ -1,30 +1,48 @@
 /**
- * Purpose: Main chat screen — session sidebar + message list + input bar.
+ * Purpose: Main chat screen — session sidebar (ProjectList) + agent chat area +
+ *          message input. Wires AsyncScreen on both the session sidebar list and
+ *          the agent chat area for all 7 UI states.
  * Inputs:  Active session from conversationStore, message stream from useConversation
  * Outputs: Full chat UI with session list, message bubbles, text input
  * Constraints: Sidebar toggle; auto-scroll to latest message; streaming indicator
- * SPORT: T-E1-07
+ * SPORT: T-P3-E5-W1-S2-T01
  */
 
 import React, { useRef, useEffect, useState } from "react";
 import {
   Plus, ChevronLeft, ChevronRight, Send, Square,
-  Loader2, FolderOpen, Clock,
+  Loader2, FolderOpen, Clock, MessageSquare,
 } from "lucide-react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useAppStore } from "@/stores/appStore";
 import { useConversation } from "@/hooks/useConversation";
 import { useSidebar } from "@/hooks/useSidebar";
+import { useDaemonStatus } from "@/hooks/useDaemonStatus";
+import { useAsyncResult } from "@/hooks/useAsyncResult";
+import { err } from "@nself/errors";
+import type { AppError } from "@nself/errors";
+import { AsyncScreen } from "@nself/ui";
 import { listSessions, createSession, pickProjectFolder } from "@/lib/tauriApi";
 import type { Session, Message } from "@/types";
 
-// ── Session List Panel ─────────────────────────────────────────────────────────
+// ── Session sidebar skeletons ──────────────────────────────────────────────────
 
-function SessionItem({
-  session,
-  active,
-  onClick,
-}: {
+function SessionListSkeleton() {
+  return (
+    <div className="space-y-1 px-1" aria-hidden="true">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="rounded-lg px-3 py-2 animate-pulse" style={{ background: "#1a2236" }}>
+          <div className={`h-3 rounded bg-gray-800 mb-1 ${i === 0 ? "w-32" : "w-24"}`} />
+          <div className="h-2.5 w-20 rounded bg-gray-800" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Session list item ─────────────────────────────────────────────────────────
+
+function SessionItem({ session, active, onClick }: {
   session: Session;
   active: boolean;
   onClick: () => void;
@@ -36,9 +54,7 @@ function SessionItem({
       className={[
         "w-full text-left px-3 py-2 rounded-lg text-sm truncate",
         "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-        active
-          ? "bg-blue-700 text-white"
-          : "text-gray-300 hover:bg-gray-800",
+        active ? "bg-blue-700 text-white" : "text-gray-300 hover:bg-gray-800",
       ].join(" ")}
       title={title}
     >
@@ -46,16 +62,12 @@ function SessionItem({
       <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
         <Clock size={10} />
         {new Date(session.updated_at).toLocaleDateString()}
-        <span
-          className={[
-            "ml-auto px-1.5 rounded text-xs",
-            session.status === "running"
-              ? "bg-blue-900 text-blue-300"
-              : session.status === "error"
-              ? "bg-red-900 text-red-300"
-              : "bg-gray-800 text-gray-400",
-          ].join(" ")}
-        >
+        <span className={[
+          "ml-auto px-1.5 rounded text-xs",
+          session.status === "running" ? "bg-blue-900 text-blue-300"
+            : session.status === "error" ? "bg-red-900 text-red-300"
+            : "bg-gray-800 text-gray-400",
+        ].join(" ")}>
           {session.status}
         </span>
       </div>
@@ -63,25 +75,29 @@ function SessionItem({
   );
 }
 
-function SessionSidebar({
-  isOpen,
-  toggle,
-}: {
-  isOpen: boolean;
-  toggle: () => void;
-}) {
+// ── Session sidebar ───────────────────────────────────────────────────────────
+
+function SessionSidebar({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) {
   const sessions = useConversationStore((s) => s.sessions);
   const activeSession = useConversationStore((s) => s.activeSession);
   const setActiveSession = useConversationStore((s) => s.setActiveSession);
   const setSessions = useConversationStore((s) => s.setSessions);
   const activeProjectPath = useAppStore((s) => s.activeProjectPath);
   const setProjectPath = useAppStore((s) => s.setProjectPath);
+  const { isConnected, retry: retryDaemon } = useDaemonStatus();
 
+  const { result, reload } = useAsyncResult(() => listSessions(), [isConnected]);
+
+  const effectiveResult = !isConnected
+    ? err({ code: "not_found", message: "ClawDE daemon offline", status: 404 } as AppError)
+    : result;
+
+  // Sync loaded sessions into store
   useEffect(() => {
-    listSessions()
-      .then(setSessions)
-      .catch(() => {});
-  }, [setSessions]);
+    if (effectiveResult !== "loading" && "_tag" in effectiveResult && effectiveResult._tag === "Ok") {
+      setSessions(effectiveResult.value as Session[]);
+    }
+  }, [effectiveResult, setSessions]);
 
   const handleNewSession = async () => {
     let projectPath = activeProjectPath;
@@ -94,26 +110,13 @@ function SessionSidebar({
       const session = await createSession(projectPath);
       setSessions([session, ...sessions]);
       setActiveSession(session);
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   if (!isOpen) {
     return (
-      <div
-        className="flex flex-col items-center py-2 gap-1 flex-shrink-0"
-        style={{
-          width: 36,
-          background: "#0d1117",
-          borderRight: "1px solid #1e2638",
-        }}
-      >
-        <button
-          onClick={toggle}
-          className="text-gray-400 hover:text-gray-200 p-1 rounded"
-          title="Open sessions"
-        >
+      <div className="flex flex-col items-center py-2 gap-1 flex-shrink-0" style={{ width: 36, background: "#0d1117", borderRight: "1px solid #1e2638" }}>
+        <button onClick={toggle} className="text-gray-400 hover:text-gray-200 p-1 rounded" title="Open sessions">
           <ChevronRight size={16} />
         </button>
       </div>
@@ -121,65 +124,70 @@ function SessionSidebar({
   }
 
   return (
-    <div
-      className="flex flex-col flex-shrink-0"
-      style={{
-        width: 220,
-        background: "#0d1117",
-        borderRight: "1px solid #1e2638",
-      }}
-    >
-      {/* Header */}
+    <div className="flex flex-col flex-shrink-0" style={{ width: 220, background: "#0d1117", borderRight: "1px solid #1e2638" }}>
       <div className="flex items-center justify-between px-2 py-2">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-          Sessions
-        </span>
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Sessions</span>
         <div className="flex items-center gap-1">
-          <button
-            onClick={handleNewSession}
-            className="text-gray-400 hover:text-blue-400 p-1 rounded"
-            title="New session"
-          >
+          <button onClick={handleNewSession} className="text-gray-400 hover:text-blue-400 p-1 rounded" title="New session">
             <Plus size={14} />
           </button>
-          <button
-            onClick={toggle}
-            className="text-gray-400 hover:text-gray-200 p-1 rounded"
-            title="Collapse"
-          >
+          <button onClick={toggle} className="text-gray-400 hover:text-gray-200 p-1 rounded" title="Collapse">
             <ChevronLeft size={14} />
           </button>
         </div>
       </div>
 
-      {/* Project path */}
       {activeProjectPath && (
         <div className="px-2 pb-1">
           <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
             <FolderOpen size={10} />
-            <span className="truncate">
-              {activeProjectPath.split("/").pop()}
-            </span>
+            <span className="truncate">{activeProjectPath.split("/").pop()}</span>
           </div>
         </div>
       )}
 
-      {/* Session list */}
-      <div className="flex-1 overflow-y-auto px-1 pb-2 space-y-0.5">
-        {sessions.length === 0 ? (
-          <div className="text-xs text-gray-600 text-center py-8">
-            No sessions yet
-          </div>
-        ) : (
-          sessions.map((s) => (
-            <SessionItem
-              key={s.id}
-              session={s}
-              active={activeSession?.id === s.id}
-              onClick={() => setActiveSession(s)}
-            />
-          ))
-        )}
+      <div className="flex-1 overflow-y-auto pb-2">
+        <AsyncScreen
+          result={effectiveResult}
+          renderData={(loadedSessions: Session[]) => (
+            <div className="px-1 space-y-0.5">
+              {loadedSessions.map((s) => (
+                <SessionItem
+                  key={s.id}
+                  session={s}
+                  active={activeSession?.id === s.id}
+                  onClick={() => setActiveSession(s)}
+                />
+              ))}
+            </div>
+          )}
+          emptyCheck={(s: Session[]) => s.length === 0}
+          onRetry={reload}
+          slots={{
+            loading: <SessionListSkeleton />,
+            empty: (
+              <div className="flex flex-col items-center justify-center py-8 gap-2">
+                <MessageSquare size={24} className="text-gray-700" />
+                <p className="text-xs text-gray-600 text-center">Create your first project</p>
+                <button
+                  onClick={handleNewSession}
+                  className="text-xs text-blue-400 hover:underline"
+                >
+                  + New session
+                </button>
+              </div>
+            ),
+            offline: (
+              <div className="flex flex-col items-center gap-2 py-6 px-2">
+                <p className="text-yellow-400 text-xs font-medium text-center">Daemon offline</p>
+                <p className="text-gray-600 text-xs text-center">Run <code className="font-mono">nself start</code></p>
+                <button onClick={retryDaemon} className="text-xs text-blue-400 hover:underline">
+                  Reconnect
+                </button>
+              </div>
+            ),
+          }}
+        />
       </div>
     </div>
   );
@@ -195,14 +203,10 @@ function MessageBubble({ message }: { message: Message }) {
     return (
       <div className="px-4 py-2 max-w-2xl mx-auto w-full">
         <div className="text-xs text-gray-500 font-mono bg-gray-900 rounded p-2 border border-gray-800">
-          <div className="text-blue-400 mb-1">
-            🔧 {message.tool_name ?? "tool"}
-          </div>
+          <div className="text-blue-400 mb-1">🔧 {message.tool_name ?? "tool"}</div>
           {message.tool_output != null && (
             <div className="text-gray-400 whitespace-pre-wrap text-xs">
-              {typeof message.tool_output === "string"
-                ? message.tool_output
-                : JSON.stringify(message.tool_output, null, 2)}
+              {typeof message.tool_output === "string" ? message.tool_output : JSON.stringify(message.tool_output, null, 2)}
             </div>
           )}
         </div>
@@ -211,33 +215,34 @@ function MessageBubble({ message }: { message: Message }) {
   }
 
   return (
-    <div
-      className={[
-        "px-4 py-2 max-w-2xl mx-auto w-full",
-        isUser ? "flex justify-end" : "flex justify-start",
-      ].join(" ")}
-    >
-      <div
-        className={[
-          "rounded-2xl px-4 py-2 text-sm max-w-lg whitespace-pre-wrap",
-          isUser
-            ? "bg-blue-600 text-white rounded-br-sm"
-            : "bg-gray-800 text-gray-100 rounded-bl-sm",
-        ].join(" ")}
-      >
+    <div className={["px-4 py-2 max-w-2xl mx-auto w-full", isUser ? "flex justify-end" : "flex justify-start"].join(" ")}>
+      <div className={[
+        "rounded-2xl px-4 py-2 text-sm max-w-lg whitespace-pre-wrap",
+        isUser ? "bg-blue-600 text-white rounded-br-sm" : "bg-gray-800 text-gray-100 rounded-bl-sm",
+      ].join(" ")}>
         {message.content}
       </div>
     </div>
   );
 }
 
+// ── Agent chat skeleton ───────────────────────────────────────────────────────
+
+function AgentChatSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 py-4 px-4" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+          <div className={`h-10 rounded-2xl animate-pulse bg-gray-800 ${i % 2 === 0 ? "w-48" : "w-64"}`} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Message Input ──────────────────────────────────────────────────────────────
 
-function MessageInput({
-  onSubmit,
-  isStreaming,
-  disabled,
-}: {
+function MessageInput({ onSubmit, isStreaming, disabled }: {
   onSubmit: (text: string) => void;
   isStreaming: boolean;
   disabled: boolean;
@@ -252,33 +257,16 @@ function MessageInput({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="px-4 py-3 border-t"
-      style={{ borderColor: "#1e2638", background: "#0a0e1a" }}
-    >
-      <div
-        className="flex items-end gap-2 rounded-xl border px-3 py-2"
-        style={{ borderColor: "#2d3748", background: "#111827" }}
-      >
+    <form onSubmit={handleSubmit} className="px-4 py-3 border-t" style={{ borderColor: "#1e2638", background: "#0a0e1a" }}>
+      <div className="flex items-end gap-2 rounded-xl border px-3 py-2" style={{ borderColor: "#2d3748", background: "#111827" }}>
         <textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
-          placeholder={
-            disabled ? "Select a session to start" : "Ask Claude anything…"
-          }
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+          placeholder={disabled ? "Select a session to start" : "Ask Claude anything…"}
           disabled={disabled}
           rows={1}
-          className={[
-            "flex-1 resize-none bg-transparent text-sm text-gray-100 placeholder-gray-600",
-            "focus:outline-none min-h-[24px] max-h-40",
-          ].join(" ")}
+          className="flex-1 resize-none bg-transparent text-sm text-gray-100 placeholder-gray-600 focus:outline-none min-h-[24px] max-h-40"
           style={{ height: "auto" }}
         />
         <button
@@ -291,14 +279,127 @@ function MessageInput({
               : "text-blue-400 hover:text-blue-300 hover:bg-blue-900/40",
           ].join(" ")}
         >
-          {isStreaming ? (
-            <Square size={16} className="text-yellow-400" />
-          ) : (
-            <Send size={16} />
-          )}
+          {isStreaming ? <Square size={16} className="text-yellow-400" /> : <Send size={16} />}
         </button>
       </div>
     </form>
+  );
+}
+
+// ── Agent Chat Area ────────────────────────────────────────────────────────────
+
+function AgentChatArea({ activeSession }: { activeSession: Session | null }) {
+  const { messages, isStreaming, streamingContent, submit } = useConversation(activeSession?.id ?? null);
+  const { isConnected, licensed, retry: retryDaemon } = useDaemonStatus();
+
+  // useAsyncResult wraps the message fetch so AsyncScreen can display all 7 states.
+  // When there is no active session it resolves immediately with the in-memory messages.
+  const { result: messagesResult } = useAsyncResult(
+    async (): Promise<Message[]> => messages,
+    [activeSession?.id, isConnected]
+  );
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, streamingContent]);
+
+  // Apply daemon-gate overrides on top of the data fetch result.
+  const chatResult = !isConnected
+    ? err({ code: "not_found", message: "ClawDE daemon offline", status: 404 } as AppError)
+    : !licensed
+    ? err({ code: "license_required", message: "ClawDE bundle required", status: 402 } as AppError)
+    : messagesResult;
+
+  return (
+    <div className="flex flex-col flex-1 min-w-0">
+      {/* Session header */}
+      <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 border-b flex-shrink-0" style={{ borderColor: "#1e2638", background: "#0a0e1a" }}>
+        {activeSession ? (
+          <>
+            <span className="font-medium text-gray-200 truncate">
+              {activeSession.title ?? `Session ${activeSession.id.slice(0, 8)}`}
+            </span>
+            <span className={[
+              "text-xs px-1.5 py-0.5 rounded ml-auto",
+              activeSession.status === "running" ? "bg-blue-900 text-blue-300" : "bg-gray-800 text-gray-500",
+            ].join(" ")}>
+              {activeSession.status}
+            </span>
+            {isStreaming && <Loader2 size={14} className="animate-spin text-blue-400" />}
+          </>
+        ) : (
+          <span className="text-gray-600">No session selected</span>
+        )}
+      </div>
+
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto">
+        <AsyncScreen
+          result={chatResult}
+          renderData={(msgs: Message[]) => (
+            <div className="py-4 space-y-1">
+              {msgs.map((m) => <MessageBubble key={m.id} message={m} />)}
+              {isStreaming && streamingContent && (
+                <div className="px-4 py-2 max-w-2xl mx-auto w-full flex justify-start">
+                  <div className="rounded-2xl rounded-bl-sm px-4 py-2 text-sm max-w-lg bg-gray-800 text-gray-100 whitespace-pre-wrap">
+                    {streamingContent}
+                    <span className="ml-1 inline-block w-2 h-4 bg-blue-400 animate-pulse" />
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          )}
+          emptyCheck={(msgs: Message[]) => msgs.length === 0 && !isStreaming && !!activeSession}
+          slots={{
+            loading: <AgentChatSkeleton />,
+            empty: (
+              <div className="flex flex-col items-center justify-center h-full gap-2 mt-24">
+                <div className="text-4xl text-gray-700">✦</div>
+                <p className="text-sm text-gray-500">Start a conversation with your AI pair programmer</p>
+              </div>
+            ),
+            offline: (
+              <div className="flex flex-col items-center justify-center h-full gap-3 mt-16">
+                <p className="text-yellow-400 text-sm font-medium">ClawDE daemon offline</p>
+                <p className="text-gray-500 text-xs">Run <code className="font-mono">nself start</code> to reconnect</p>
+                <button onClick={retryDaemon} className="px-3 py-1.5 text-xs bg-gray-800 text-gray-200 rounded-lg hover:bg-gray-700 transition-colors">
+                  Reconnect
+                </button>
+              </div>
+            ),
+            permissionDenied: (
+              <div className="flex flex-col items-center justify-center h-full gap-3 mt-16">
+                <p className="text-red-400 text-sm font-medium">ClawDE bundle required</p>
+                <p className="text-gray-500 text-xs">Desktop is always free. Mobile + team features require the ClawDE bundle.</p>
+                <a href="https://cloud.nself.org" target="_blank" rel="noreferrer" className="px-3 py-1.5 text-xs bg-blue-700 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  Upgrade at cloud.nself.org
+                </a>
+              </div>
+            ),
+            rateLimited: (
+              <div className="flex flex-col items-center justify-center h-full gap-3 mt-16">
+                <p className="text-orange-400 text-sm font-medium">AI rate limit reached</p>
+                <p className="text-gray-500 text-xs">The AI provider is throttling requests. Please wait a moment.</p>
+                <p className="text-gray-600 text-xs font-mono">Retrying automatically…</p>
+              </div>
+            ),
+          }}
+        />
+
+        {/* No-session empty state (outside AsyncScreen — structural zero-state) */}
+        {!activeSession && !isConnected ? null : !activeSession && (
+          <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-2 mt-16">
+            <div className="text-4xl">✦</div>
+            <div className="text-sm">Select or create a session to start</div>
+          </div>
+        )}
+      </div>
+
+      <MessageInput onSubmit={submit} isStreaming={isStreaming} disabled={!activeSession} />
+    </div>
   );
 }
 
@@ -307,82 +408,11 @@ function MessageInput({
 export function ChatScreen() {
   const { isOpen, toggle } = useSidebar();
   const activeSession = useConversationStore((s) => s.activeSession);
-  const { messages, isStreaming, streamingContent, submit } =
-    useConversation(activeSession?.id ?? null);
-
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
 
   return (
     <div className="flex h-full">
       <SessionSidebar isOpen={isOpen} toggle={toggle} />
-
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Session header */}
-        <div
-          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 border-b flex-shrink-0"
-          style={{ borderColor: "#1e2638", background: "#0a0e1a" }}
-        >
-          {activeSession ? (
-            <>
-              <span className="font-medium text-gray-200 truncate">
-                {activeSession.title ?? `Session ${activeSession.id.slice(0, 8)}`}
-              </span>
-              <span
-                className={[
-                  "text-xs px-1.5 py-0.5 rounded ml-auto",
-                  activeSession.status === "running"
-                    ? "bg-blue-900 text-blue-300"
-                    : "bg-gray-800 text-gray-500",
-                ].join(" ")}
-              >
-                {activeSession.status}
-              </span>
-              {isStreaming && (
-                <Loader2 size={14} className="animate-spin text-blue-400" />
-              )}
-            </>
-          ) : (
-            <span className="text-gray-600">No session selected</span>
-          )}
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-1">
-          {messages.map((m) => (
-            <MessageBubble key={m.id} message={m} />
-          ))}
-
-          {/* Streaming assistant response */}
-          {isStreaming && streamingContent && (
-            <div className="px-4 py-2 max-w-2xl mx-auto w-full flex justify-start">
-              <div className="rounded-2xl rounded-bl-sm px-4 py-2 text-sm max-w-lg bg-gray-800 text-gray-100 whitespace-pre-wrap">
-                {streamingContent}
-                <span className="ml-1 inline-block w-2 h-4 bg-blue-400 animate-pulse" />
-              </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!activeSession && messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-2">
-              <div className="text-4xl">✦</div>
-              <div className="text-sm">Select or create a session to start</div>
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
-        <MessageInput
-          onSubmit={submit}
-          isStreaming={isStreaming}
-          disabled={!activeSession}
-        />
-      </div>
+      <AgentChatArea activeSession={activeSession} />
     </div>
   );
 }
