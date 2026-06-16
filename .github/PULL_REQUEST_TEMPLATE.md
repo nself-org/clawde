@@ -17,10 +17,10 @@
 
 <!-- How was this tested? -->
 
-- [ ] `melos analyze` passes
-- [ ] `melos test` passes
 - [ ] `cargo clippy` passes (if daemon changes)
 - [ ] `cargo test` passes (if daemon changes)
+- [ ] `pnpm typecheck` passes (if desktop changes)
+- [ ] `pnpm test` passes (if desktop or mobile changes)
 - [ ] Manually tested on: <!-- e.g. macOS 15, iOS 18 -->
 
 ## Screenshots (if UI changes)

@@ -32,16 +32,14 @@ See the [Wiki](https://github.com/nself-org/clawde/wiki) for full documentation:
 git clone https://github.com/nself-org/clawde.git
 cd clawde
 
-# Bootstrap Dart/Flutter workspace
-cd apps
-dart pub global activate melos
-melos bootstrap
+# Build and run the daemon (Rust)
+cd apps/daemon && cargo run
 
-# Build and run the daemon
-cd daemon && cargo build --release
+# Run the desktop app (Tauri 2 + React)
+cd ../desktop && pnpm install && pnpm tauri dev
 
-# Run the desktop app
-cd ../desktop && flutter run
+# Run the mobile app (React Native + Expo)
+cd ../mobile && pnpm install && pnpm start
 ```
 
 See [Getting Started](https://github.com/nself-org/clawde/wiki/Getting-Started) for full setup instructions.
@@ -49,13 +47,14 @@ See [Getting Started](https://github.com/nself-org/clawde/wiki/Getting-Started) 
 ## Structure
 
 ```text
-apps/         # All application code
-  daemon/     # clawd — Rust/Tokio daemon
-  desktop/    # Flutter desktop app (macOS/Windows/Linux)
-  mobile/     # Flutter mobile app (iOS/Android)
-  packages/   # Shared Dart packages
-site/         # Website (clawde.io)
-.github/      # CI/CD workflows, wiki source, brand assets
+apps/                        # All application code
+  daemon/                    # clawd — Rust/Tokio daemon (port 4300)
+  desktop/                   # Tauri 2 + React + Vite (macOS/Windows/Linux)
+  mobile/                    # React Native + Expo (iOS/Android)
+  packages/clawd_plugin_abi/ # Rust crate: plugin ABI
+  packages-flutter-archive/  # Retired Flutter/Dart packages (archive only)
+site/                        # Website (clawde.io)
+.github/                     # CI/CD workflows, wiki source, brand assets
 ```
 
 ## Features
@@ -93,11 +92,15 @@ Download the `clawd-x86_64-pc-windows-msvc.exe` binary from the [Releases page](
 
 ```bash
 git clone https://github.com/nself-org/clawde.git
-cd clawde/apps
-dart pub global activate melos
-melos bootstrap
-cd daemon && cargo build --release
-cd ../desktop && flutter run -d macos
+
+# Daemon (Rust)
+cd clawde/apps/daemon && cargo build --release
+
+# Desktop (Tauri 2 + React)
+cd ../desktop && pnpm install && pnpm tauri build
+
+# Mobile (React Native + Expo)
+cd ../mobile && pnpm install && pnpm ios   # or pnpm android
 ```
 
 ## Usage
@@ -125,7 +128,7 @@ The daemon spawns the provider CLI and brokers messages over JSON-RPC.
 
 ## Architecture
 
-ClawDE is built around a single Rust daemon (`clawd`) that holds session state in embedded SQLite, brokers JSON-RPC 2.0 over WebSocket, and supervises provider CLIs (Claude Code, Codex, Cursor, Aider). Flutter clients on desktop and mobile share Dart packages (`clawd_proto`, `clawd_client`) and never talk to providers directly. ClawDE Cloud is a proprietary fork hosted by us; the open-source code in this repo covers the self-hosted mode entirely.
+ClawDE is built around a single Rust daemon (`clawd`) that holds session state in embedded SQLite, brokers JSON-RPC 2.0 over WebSocket, and supervises provider CLIs (Claude Code, Codex, Cursor, Aider). The desktop app (Tauri 2 + React) and mobile app (React Native + Expo) are thin TypeScript clients of that daemon and never talk to providers directly. ClawDE Cloud is a proprietary fork hosted by us; the open-source code in this repo covers the self-hosted mode entirely.
 
 See the [Architecture wiki page](https://github.com/nself-org/clawde/wiki/Architecture) for the deep-dive.
 
