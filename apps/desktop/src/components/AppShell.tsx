@@ -14,6 +14,7 @@ import {
   Search, Package, Stethoscope, BookOpen, Settings, Wifi, WifiOff,
   AlertCircle, KeyRound, RefreshCw,
 } from "lucide-react";
+import { useNselfTranslation } from "@nself/i18n";
 import { useAppStore } from "@/stores/appStore";
 import type { NavRoute } from "@/types";
 import { ChatScreen } from "./ChatScreen";
@@ -52,52 +53,62 @@ class RouteErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          className="flex flex-col items-center justify-center h-full text-center p-8"
-          style={{ background: "#030712" }}
-        >
-          <AlertCircle size={28} className="text-red-400 mb-3" />
-          <div className="text-base font-semibold text-gray-200 mb-1">
-            This view crashed
-          </div>
-          <div className="text-xs text-gray-500 font-mono mb-5 max-w-md break-all">
-            {this.state.error?.message}
-          </div>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 transition-colors"
-          >
-            <RefreshCw size={13} />
-            Retry
-          </button>
-        </div>
+        <RouteErrorFallback
+          error={this.state.error}
+          onRetry={() => this.setState({ hasError: false, error: null })}
+        />
       );
     }
     return this.props.children;
   }
 }
 
+function RouteErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
+  const { t } = useNselfTranslation();
+  return (
+    <div
+      className="flex flex-col items-center justify-center h-full text-center p-8"
+      style={{ background: "#030712" }}
+    >
+      <AlertCircle size={28} className="text-red-400 mb-3" />
+      <div className="text-base font-semibold text-gray-200 mb-1">
+        {t('desktop.clawde.somethingWrong')}
+      </div>
+      <div className="text-xs text-gray-500 font-mono mb-5 max-w-md break-all">
+        {error?.message}
+      </div>
+      <button
+        onClick={onRetry}
+        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-500 transition-colors"
+      >
+        <RefreshCw size={13} />
+        {t('desktop.clawde.tryAgain')}
+      </button>
+    </div>
+  );
+}
+
 // ── Nav + screen definitions ───────────────────────────────────────────────────
 
 interface NavItem {
   route: NavRoute;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
   badge?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { route: "chat", label: "Chat", icon: <MessageSquare size={20} /> },
-  { route: "sessions", label: "Sessions", icon: <List size={20} /> },
-  { route: "files", label: "Files", icon: <FolderOpen size={20} /> },
-  { route: "git", label: "Git", icon: <GitBranch size={20} /> },
-  { route: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-  { route: "search", label: "Search", icon: <Search size={20} /> },
-  { route: "packs", label: "Packs", icon: <Package size={20} /> },
-  { route: "doctor", label: "Doctor", icon: <Stethoscope size={20} /> },
-  { route: "instructions", label: "Instructions", icon: <BookOpen size={20} /> },
-  { route: "oauth", label: "OAuth", icon: <KeyRound size={20} /> },
-  { route: "settings", label: "Settings", icon: <Settings size={20} /> },
+  { route: "chat", labelKey: "desktop.clawde.chat", icon: <MessageSquare size={20} /> },
+  { route: "sessions", labelKey: "desktop.clawde.sessions", icon: <List size={20} /> },
+  { route: "files", labelKey: "desktop.clawde.files", icon: <FolderOpen size={20} /> },
+  { route: "git", labelKey: "desktop.clawde.git", icon: <GitBranch size={20} /> },
+  { route: "dashboard", labelKey: "desktop.clawde.dashboard", icon: <LayoutDashboard size={20} /> },
+  { route: "search", labelKey: "desktop.clawde.search", icon: <Search size={20} /> },
+  { route: "packs", labelKey: "desktop.clawde.packs", icon: <Package size={20} /> },
+  { route: "doctor", labelKey: "desktop.clawde.doctor", icon: <Stethoscope size={20} /> },
+  { route: "instructions", labelKey: "desktop.clawde.instructions", icon: <BookOpen size={20} /> },
+  { route: "oauth", labelKey: "desktop.clawde.oauth", icon: <KeyRound size={20} /> },
+  { route: "settings", labelKey: "desktop.clawde.settings", icon: <Settings size={20} /> },
 ];
 
 function ScreenContent({ route }: { route: NavRoute }) {
@@ -128,6 +139,7 @@ function ScreenContent({ route }: { route: NavRoute }) {
 // ── Connection status widget ───────────────────────────────────────────────────
 
 function ConnectionStatus() {
+  const { t } = useNselfTranslation();
   const daemonStatus = useAppStore((s) => s.daemonStatus);
   const daemonError = useAppStore((s) => s.daemonError);
 
@@ -135,7 +147,7 @@ function ConnectionStatus() {
     return (
       <div className="flex items-center gap-1 text-xs text-red-400 px-2 py-1">
         <WifiOff size={12} />
-        <span>Disconnected</span>
+        <span>{t('desktop.clawde.disconnected')}</span>
       </div>
     );
   }
@@ -143,14 +155,14 @@ function ConnectionStatus() {
     return (
       <div className="flex items-center gap-1 text-xs text-yellow-400 px-2 py-1">
         <AlertCircle size={12} />
-        <span>Starting...</span>
+        <span>{t('desktop.clawde.starting')}</span>
       </div>
     );
   }
   return (
     <div className="flex items-center gap-1 text-xs text-green-400 px-2 py-1">
       <Wifi size={12} />
-      <span>Connected</span>
+      <span>{t('desktop.clawde.connected')}</span>
     </div>
   );
 }
@@ -177,6 +189,7 @@ function StatusBar() {
 // ── Root shell ─────────────────────────────────────────────────────────────────
 
 export function AppShell() {
+  const { t } = useNselfTranslation();
   const currentRoute = useAppStore((s) => s.currentRoute);
   const setRoute = useAppStore((s) => s.setRoute);
 
@@ -198,10 +211,11 @@ export function AppShell() {
 
         {NAV_ITEMS.map((item) => {
           const active = currentRoute === item.route;
+          const label = t(item.labelKey as Parameters<typeof t>[0]);
           return (
             <button
               key={item.route}
-              title={item.label}
+              title={label}
               onClick={() => setRoute(item.route)}
               className={[
                 "relative flex items-center justify-center w-10 h-10 rounded-lg",

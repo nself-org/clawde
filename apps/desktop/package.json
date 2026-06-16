@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@nself/errors": "workspace:*",
+    "@nself/i18n": "workspace:*",
     "@nself/tauri-bridge": "workspace:*",
     "@nself/types": "workspace:*",
     "@nself/ui": "workspace:*",
