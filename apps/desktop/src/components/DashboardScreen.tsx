@@ -45,11 +45,9 @@ function formatUptime(seconds: number): string {
 }
 
 export function DashboardScreen() {
-  const { daemonStatus, daemonVersion, refreshDaemon } = useAppStore((s) => ({
-    daemonStatus: s.daemonStatus,
-    daemonVersion: s.daemonVersion,
-    refreshDaemon: s.refreshDaemon,
-  }));
+  const daemonStatus = useAppStore((s) => s.daemonStatus);
+  const daemonVersion = useAppStore((s) => s.daemonVersion);
+  const refreshDaemon = useAppStore((s) => s.refreshDaemon);
 
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [memory, setMemory] = useState<MemoryEntry[]>([]);

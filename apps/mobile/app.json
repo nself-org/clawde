@@ -3,6 +3,7 @@
     "name": "ClawDE",
     "slug": "clawde",
     "version": "0.3.2",
+    "sdkVersion": "53.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

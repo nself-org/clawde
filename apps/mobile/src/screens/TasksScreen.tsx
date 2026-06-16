@@ -14,7 +14,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
-  ScrollView,
   ActivityIndicator,
   RefreshControl,
   TextInput,

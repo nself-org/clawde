@@ -20,13 +20,9 @@ interface SearchResult {
 export function SearchScreen() {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { sessions, messages, setActiveSession } = useConversationStore(
-    (s) => ({
-      sessions: s.sessions,
-      messages: s.messages,
-      setActiveSession: s.setActiveSession,
-    })
-  );
+  const sessions = useConversationStore((s) => s.sessions);
+  const messages = useConversationStore((s) => s.messages);
+  const setActiveSession = useConversationStore((s) => s.setActiveSession);
   const setRoute = useAppStore((s) => s.setRoute);
 
   useEffect(() => {

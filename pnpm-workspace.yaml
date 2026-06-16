@@ -1,0 +1,6 @@
+# clawde JS/TS pnpm workspace
+# Includes the RN mobile app.
+# @nself/* shared packages are resolved from the packages/ sibling workspace via relative path.
+packages:
+  - 'apps/mobile'
+  - '../packages/@nself/*'

@@ -48,11 +48,9 @@ async function checkGitAvailable(): Promise<DoctorCheck> {
 }
 
 export function DoctorScreen() {
-  const { daemonStatus, daemonError, refreshDaemon } = useAppStore((s) => ({
-    daemonStatus: s.daemonStatus,
-    daemonError: s.daemonError,
-    refreshDaemon: s.refreshDaemon,
-  }));
+  const daemonStatus = useAppStore((s) => s.daemonStatus);
+  const daemonError = useAppStore((s) => s.daemonError);
+  const refreshDaemon = useAppStore((s) => s.refreshDaemon);
 
   const [checks, setChecks] = useState<DoctorCheck[]>([]);
   const [loading, setLoading] = useState(false);

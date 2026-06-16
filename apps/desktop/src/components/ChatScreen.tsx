@@ -70,16 +70,11 @@ function SessionSidebar({
   isOpen: boolean;
   toggle: () => void;
 }) {
-  const { sessions, activeSession, setActiveSession, setSessions } =
-    useConversationStore((s) => ({
-      sessions: s.sessions,
-      activeSession: s.activeSession,
-      setActiveSession: s.setActiveSession,
-      setSessions: s.setSessions,
-    }));
-  const { activeProjectPath } = useAppStore((s) => ({
-    activeProjectPath: s.activeProjectPath,
-  }));
+  const sessions = useConversationStore((s) => s.sessions);
+  const activeSession = useConversationStore((s) => s.activeSession);
+  const setActiveSession = useConversationStore((s) => s.setActiveSession);
+  const setSessions = useConversationStore((s) => s.setSessions);
+  const activeProjectPath = useAppStore((s) => s.activeProjectPath);
   const setProjectPath = useAppStore((s) => s.setProjectPath);
 
   useEffect(() => {

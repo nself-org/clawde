@@ -75,10 +75,8 @@ function Toggle({
 }
 
 export function SettingsScreen() {
-  const { daemonStatus, daemonVersion } = useAppStore((s) => ({
-    daemonStatus: s.daemonStatus,
-    daemonVersion: s.daemonVersion,
-  }));
+  const daemonStatus = useAppStore((s) => s.daemonStatus);
+  const daemonVersion = useAppStore((s) => s.daemonVersion);
 
   const [prefs, setPrefs] = useState<AppPrefs>(loadPrefs);
   const [saved, setSaved] = useState(false);

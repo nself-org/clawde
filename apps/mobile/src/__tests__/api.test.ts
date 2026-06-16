@@ -6,12 +6,10 @@
  * SPORT: T-E1-06 — React Native Expo migration
  */
 
-// Mock the daemon client
-const mockCall = jest.fn().mockResolvedValue([]);
-
+// Mock the daemon client — mockCall must live inside factory (jest hoisting rule)
 jest.mock('../lib/daemon', () => ({
   daemonClient: {
-    call: mockCall,
+    call: jest.fn().mockResolvedValue([]),
     setUrl: jest.fn(),
     reconnect: jest.fn(),
     onConnectionChange: jest.fn(),
@@ -19,6 +17,9 @@ jest.mock('../lib/daemon', () => ({
 }));
 
 import * as api from '../lib/api';
+import { daemonClient } from '../lib/daemon';
+
+const mockCall = daemonClient.call as jest.Mock;
 
 beforeEach(() => {
   mockCall.mockClear();

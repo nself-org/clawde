@@ -1,0 +1,18 @@
+{
+  "name": "clawde",
+  "version": "0.3.3",
+  "private": true,
+  "description": "ClawDE — AI dev environment JS/TS workspace root (RN mobile + @nself/* shared packages)",
+  "scripts": {
+    "mobile": "pnpm --filter @clawde/mobile start",
+    "mobile:ios": "pnpm --filter @clawde/mobile ios",
+    "mobile:android": "pnpm --filter @clawde/mobile android",
+    "typecheck": "pnpm -r run type-check",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

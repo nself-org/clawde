@@ -12,6 +12,7 @@ import { DaemonClient } from '../lib/daemon';
 
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
+  static OPEN = 1; // Required: DaemonClient checks ws.readyState !== WebSocket.OPEN
   onopen: (() => void) | null = null;
   onclose: (() => void) | null = null;
   onerror: (() => void) | null = null;
@@ -40,7 +41,8 @@ class MockWebSocket {
 }
 
 // Inject mock globally before importing daemon
-(global as unknown as Record<string, unknown>).WebSocket = MockWebSocket;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).WebSocket = MockWebSocket;
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

@@ -62,10 +62,8 @@ function ScreenContent({ route }: { route: NavRoute }) {
 }
 
 function ConnectionStatus() {
-  const { daemonStatus, daemonError } = useAppStore((s) => ({
-    daemonStatus: s.daemonStatus,
-    daemonError: s.daemonError,
-  }));
+  const daemonStatus = useAppStore((s) => s.daemonStatus);
+  const daemonError = useAppStore((s) => s.daemonError);
 
   if (daemonError) {
     return (
@@ -92,10 +90,8 @@ function ConnectionStatus() {
 }
 
 function StatusBar() {
-  const { daemonVersion, activeProjectPath } = useAppStore((s) => ({
-    daemonVersion: s.daemonVersion,
-    activeProjectPath: s.activeProjectPath,
-  }));
+  const daemonVersion = useAppStore((s) => s.daemonVersion);
+  const activeProjectPath = useAppStore((s) => s.activeProjectPath);
 
   return (
     <div
