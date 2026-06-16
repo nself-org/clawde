@@ -1,5 +1,6 @@
 /**
  * Purpose: Root entry — React Navigation shell + QueryClient + push event bridge.
+ *          Initialises Sentry error reporting.
  * Inputs:  DaemonPushEvent stream; connection store; React Query cache.
  * Outputs: Bottom-tab navigator with badge overlays and update banner.
  * Constraints: Must handle cold start (no active host) gracefully.
@@ -8,12 +9,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import * as SentryRN from '@sentry/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { initObservability } from '@nself/observability';
 
 import { daemonClient } from '@/lib/daemon';
 import { useConnectionStore } from '@/lib/store';
@@ -38,6 +41,20 @@ export type BottomTabParamList = {
   Hosts: undefined;
   Settings: undefined;
 };
+
+// ── Sentry init (module level — before first render) ─────────────────────────
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  initObservability({
+    sentry: {
+      sdk: SentryRN as any, // React Native SDK has different signature; type coercion needed
+      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      environment: process.env.APP_ENV ?? 'development',
+      appKind: 'native' as const,
+      release: process.env.EXPO_PUBLIC_APP_VERSION ?? '0.3.4',
+      tracesSampleRate: process.env.APP_ENV === 'production' ? 0.2 : 1.0,
+    },
+  });
+}
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -212,7 +229,7 @@ function AppShell() {
   );
 }
 
-export default function App() {
+function AppWrapper() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
@@ -223,6 +240,8 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+export default SentryRN.wrap(AppWrapper);
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
