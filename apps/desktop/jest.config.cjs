@@ -21,6 +21,9 @@ const config = {
     "^@/(.*)$": "<rootDir>/src/$1",
     // Mock Tauri API in tests (no native bridge)
     "^@tauri-apps/(.*)$": "<rootDir>/src/__tests__/__mocks__/tauri.ts",
+    // Mock @nself/* workspace packages (not built in test env)
+    "^@nself/ui$": "<rootDir>/src/__tests__/__mocks__/nself-ui.ts",
+    "^@nself/errors$": "<rootDir>/src/__tests__/__mocks__/nself-errors.ts",
     "\\.css$": "identity-obj-proxy",
   },
   testMatch: ["**/__tests__/**/*.test.{ts,tsx}", "**/*.test.{ts,tsx}"],

@@ -28,3 +28,7 @@ pre-push:
       run: go test ./... -count=1 -timeout 120s
     flutter-analyze:
       run: flutter analyze apps/desktop apps/mobile --no-fatal-infos 2>/dev/null || true
+    ci-line-count-gate:
+      run: bash ../.github/ci-line-count-gate.sh
+    ci-stub-gate:
+      run: bash ../.github/ci-stub-gate.sh
