@@ -1,6 +1,6 @@
 {
   "name": "clawde",
-  "version": "0.3.3",
+  "version": "0.3.5",
   "private": true,
   "description": "ClawDE — AI dev environment JS/TS workspace root (RN mobile + @nself/* shared packages)",
   "scripts": {
