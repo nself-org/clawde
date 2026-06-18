@@ -1,5 +1,16 @@
 name: Desktop Windows Build
 
+# Builds the clawd Rust daemon for x86_64-pc-windows-msvc.
+# Desktop app (Tauri 2/React) CI runs in ci.yml; native Tauri Windows
+# packaging runs via release.yml on tag push.
+#
+# SSL.com EV signing: optional, runs only when SSL_COM_USERNAME secret is set.
+# Required secrets (Settings -> Secrets and variables -> Actions):
+#   SSL_COM_USERNAME       - SSL.com account username
+#   SSL_COM_PASSWORD       - SSL.com account password
+#   SSL_COM_CREDENTIAL_ID  - eSigner credential ID
+#   SSL_COM_TOTP_SECRET    - eSigner TOTP secret
+
 on:
   push:
     tags: ['v*']
@@ -12,36 +23,44 @@ concurrency:
 jobs:
   build:
     runs-on: windows-2022
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.NSELF_PAT || github.token }}
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          flutter-version: 'stable'
-          channel: 'stable'
-          cache: true
+          targets: x86_64-pc-windows-msvc
 
-      - name: Install Flutter deps
-        working-directory: apps/desktop
-        run: flutter pub get
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/daemon/target
+          key: windows-x86_64-cargo-${{ hashFiles('apps/daemon/Cargo.lock') }}
+          restore-keys: windows-x86_64-cargo-
 
-      - name: Enable Windows desktop
-        run: flutter config --enable-windows-desktop
+      - name: Build clawd (Windows release)
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc
+        working-directory: apps/daemon
 
-      - name: Build Flutter Windows
-        working-directory: apps/desktop
-        run: flutter build windows --release
+      - name: Stage artifacts
+        shell: pwsh
+        run: |
+          $binSrc  = "apps/daemon/target/x86_64-pc-windows-msvc/release/clawd.exe"
+          $destBin = "clawd-x86_64-pc-windows-msvc.exe"
+          $destSha = "clawd-x86_64-pc-windows-msvc.sha256"
+          Copy-Item $binSrc $destBin
+          $hash = (Get-FileHash $destBin -Algorithm SHA256).Hash.ToLower()
+          $hash | Out-File -FilePath $destSha -NoNewline -Encoding ascii
+          Write-Output "Binary:   $destBin"
+          Write-Output "Checksum: $hash"
 
-      # SSL.com eSigner EV code-signing (no-op until SSL_COM_USERNAME org secret is set).
-      # Signs the Flutter Windows runner executable (PE format, supported by eSigner).
-      # Rate limit: 10 signs/min. One exe per tag run = well within limit.
-      # GitHub Actions does NOT allow the `secrets` context in step-level `if:` expressions
-      # (causes the workflow to fail to parse → 0-job runs on every push). Workaround:
-      # surface the secret presence as a prior step output, then gate via `steps.*.outputs`.
+      # SSL.com eSigner EV code-signing (no-op until SSL_COM_USERNAME secret is set).
       - name: Detect SSL.com signing availability
         id: signcheck
         shell: bash
@@ -63,12 +82,12 @@ jobs:
           password: ${{ secrets.SSL_COM_PASSWORD }}
           credential_id: ${{ secrets.SSL_COM_CREDENTIAL_ID }}
           totp_secret: ${{ secrets.SSL_COM_TOTP_SECRET }}
-          file_path: apps/desktop/build/windows/x64/runner/Release/clawde.exe
+          file_path: clawd-x86_64-pc-windows-msvc.exe
           override: true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: desktop-windows-x64
-          path: apps/desktop/build/windows/x64/runner/Release/
+          path: clawd-x86_64-pc-windows-msvc*
           retention-days: 30

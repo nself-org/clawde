@@ -39,6 +39,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -46,15 +51,10 @@ jobs:
           cache: "pnpm"
         continue-on-error: false
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Install dependencies
-        working-directory: clawde
         run: pnpm install --frozen-lockfile
 
       - name: Validate dataset JSONL files
-        working-directory: clawde
         run: |
           if [ -f evaluation/validate-datasets.ts ]; then
             npx tsx evaluation/validate-datasets.ts
@@ -68,10 +68,9 @@ jobs:
         run: |
           DATASET_TYPE="${{ github.event.inputs.dataset || 'hybrid' }}"
           echo "type=${DATASET_TYPE}" >> "$GITHUB_OUTPUT"
-          echo "path=clawde/evaluation/datasets/${DATASET_TYPE}.jsonl" >> "$GITHUB_OUTPUT"
+          echo "path=evaluation/datasets/${DATASET_TYPE}.jsonl" >> "$GITHUB_OUTPUT"
 
       - name: Run offline eval harness
-        working-directory: clawde
         run: |
           chmod +x evaluation/run_eval.sh
           evaluation/run_eval.sh \
@@ -109,7 +108,7 @@ jobs:
             echo "Baseline populated on first run — committing baseline.json"
             git config user.name "nSelf CI"
             git config user.email "ci@nself.org"
-            git add clawde/evaluation/baseline.json
+            git add evaluation/baseline.json
             git commit -m "ci: populate eval baseline.json from first run [skip ci]" || echo "Nothing to commit"
             git push || echo "Push failed (expected if branch protection requires PR)"
           fi

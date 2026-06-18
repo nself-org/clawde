@@ -17,7 +17,7 @@ jobs:
       - name: Download Linux binary from release
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-          BINARY_URL="https://github.com/clawde-io/apps/releases/download/${VERSION}/clawd-x86_64-unknown-linux-gnu"
+          BINARY_URL="https://github.com/nself-org/clawde/releases/download/${VERSION}/clawd-x86_64-unknown-linux-gnu"
           curl -fLo clawd "${BINARY_URL}"
           chmod +x clawd
           echo "Downloaded binary: $(file clawd)"

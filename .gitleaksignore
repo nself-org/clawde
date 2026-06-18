@@ -1,0 +1,12 @@
+# .gitleaksignore — confirmed false positive fingerprints
+#
+# These fingerprints identify documentation comments in Apple signing workflows
+# that describe the expected format of App Store Connect .p8 API key files.
+# The text "-----BEGIN EC PRIVATE KEY-----" appears only in comment blocks
+# explaining what the secret value should look like. No real key is present.
+# Verified 2026-06-18. RuleID: ec-private-key.
+
+3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/macos-release.yml:ec-private-key:37
+3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/ios-release.yml:ec-private-key:36
+5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/ios-release.yml:ec-private-key:36
+5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/macos-release.yml:ec-private-key:37

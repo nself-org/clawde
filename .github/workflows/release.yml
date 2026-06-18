@@ -118,10 +118,13 @@ jobs:
         shell: bash
         run: |
           BINARY="clawd-${{ matrix.target }}"
-          # Locate sign_update from Sparkle (bundled in auto_updater pub package)
+          # Locate sign_update from Sparkle (bundled in auto_updater pub package).
+          # Use || true so find non-zero exit (missing ~/.pub-cache) does not abort
+          # the step under bash -e -o pipefail.
           SIGN_TOOL=""
           PUB_CACHE="${HOME}/.pub-cache"
-          SPARKLE_SIGN=$(find "${PUB_CACHE}" -name "sign_update" -type f 2>/dev/null | head -1)
+          SPARKLE_SIGN=$(find "${PUB_CACHE}" -name "sign_update" -type f 2>/dev/null || true)
+          SPARKLE_SIGN=$(echo "${SPARKLE_SIGN}" | head -1)
           if command -v sign_update &>/dev/null; then
             SIGN_TOOL="sign_update"
           elif [[ -n "${SPARKLE_SIGN}" ]]; then
@@ -136,7 +139,7 @@ jobs:
               echo "Sparkle signature written: ${BINARY}.sparkle_sig"
             fi
           else
-            echo "sign_update not found or SPARKLE_PRIVATE_KEY not set — skipping"
+            echo "sign_update not found or SPARKLE_PRIVATE_KEY not set, skipping Sparkle signature."
           fi
 
       - name: Upload build artifacts
