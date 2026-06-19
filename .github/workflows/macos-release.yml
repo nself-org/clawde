@@ -155,7 +155,7 @@ jobs:
           done
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: clawde-macos-${{ matrix.arch }}-${{ github.sha }}
