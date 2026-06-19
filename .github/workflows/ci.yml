@@ -27,6 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout @nself packages
+        uses: actions/checkout@v4
+        with:
+          repository: nself-org/packages
+          path: ../packages
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -238,7 +244,7 @@ jobs:
           # noise must not fail the gate (it is not a contract change).
           DRIFT=$(git diff -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go \
             | grep -E '^[+-]' | grep -vE '^[+-]{3} ' \
-            | grep -viE '//[[:space:]]*(protoc|protoc-gen-go|protoc-gen-go-grpc)[[:space:]]+v' || true)
+            | grep -viE '//[[:space:]]*(- )?(protoc|protoc-gen-go|protoc-gen-go-grpc)[[:space:]]+v' || true)
           if [ -n "$DRIFT" ]; then
             echo "::error::Functional proto drift detected (regenerate with 'make proto' and commit):"
             git --no-pager diff -- internal/server/gateway.pb.go internal/server/gateway_grpc.pb.go internal/server/gateway.pb.gw.go
