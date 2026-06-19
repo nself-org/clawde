@@ -16,13 +16,14 @@ jobs:
   # Desktop was migrated from Flutter to Tauri 2 + React (T-E1-07).
   # CI checks TypeScript compilation and Jest tests; Tauri native build
   # is validated by the macOS notarize workflow on release.
+  #
+  # Install runs from the workspace root so that workspace:* deps
+  # (@nself/i18n, @nself/errors, @nself/ui, @nself/observability, etc.)
+  # are resolved via pnpm-workspace.yaml → ../packages/@nself/*.
   desktop-check:
     name: Desktop · typecheck + test (Tauri/React)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps/desktop
     steps:
       - uses: actions/checkout@v4
 
@@ -35,15 +36,17 @@ jobs:
         with:
           node-version: '20'
           cache: pnpm
-          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Install dependencies (workspace root)
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
+        working-directory: apps/desktop
         run: pnpm run typecheck
 
       - name: Test
+        working-directory: apps/desktop
         run: pnpm test -- --passWithNoTests
 
   # ─── Rust daemon ──────────────────────────────────────────────────
