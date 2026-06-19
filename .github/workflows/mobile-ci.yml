@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Clone @nself packages (sibling workspace dep)
-        run: git clone --depth=1 https://github.com/nself-org/packages.git "${{ github.workspace }}/../packages"
+        run: git clone --depth=1 https://x-access-token:${{ github.token }}@github.com/nself-org/packages.git "${{ github.workspace }}/../packages"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
