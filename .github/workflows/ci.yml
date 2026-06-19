@@ -27,11 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout @nself packages
-        uses: actions/checkout@v4
-        with:
-          repository: nself-org/packages
-          path: ../packages
+      - name: Clone @nself packages (sibling workspace dep)
+        run: git clone --depth=1 https://github.com/nself-org/packages.git "${{ github.workspace }}/../packages"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
