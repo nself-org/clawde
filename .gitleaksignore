@@ -4,10 +4,15 @@
 # that describe the expected format of App Store Connect .p8 API key files.
 # The text "-----BEGIN EC PRIVATE KEY-----" appears only in comment blocks
 # explaining what the secret value should look like. No real key is present.
-# Verified 2026-06-18. RuleID: ec-private-key.
+# Verified 2026-06-18. RuleID: ec-private-key (local gitleaks >=8.30) / private-key (CI gitleaks 8.21.2).
+# Both rule IDs suppressed for the same 4 locations — cross-version compatibility.
 
 3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/macos-release.yml:ec-private-key:37
 3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/ios-release.yml:ec-private-key:36
 5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/ios-release.yml:ec-private-key:36
 5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/macos-release.yml:ec-private-key:37
 b6b7d8a7edcd945157bb6e797acabc386a1db0b3:.gitleaksignore:ec-private-key:5
+3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/ios-release.yml:private-key:36
+3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/macos-release.yml:private-key:37
+5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/ios-release.yml:private-key:36
+5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/macos-release.yml:private-key:37
