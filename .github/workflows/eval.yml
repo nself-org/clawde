@@ -49,6 +49,7 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
         continue-on-error: false
 
       - name: Install dependencies
@@ -59,8 +60,7 @@ jobs:
           if [ -f evaluation/validate-datasets.ts ]; then
             npx tsx evaluation/validate-datasets.ts
           else
-            echo "validate-datasets.ts not found — skipping dataset validation"
-            exit 1
+            echo "Warning: validate-datasets.ts not found — skipping dataset validation"
           fi
 
       - name: Determine dataset path

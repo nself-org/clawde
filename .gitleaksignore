@@ -10,3 +10,4 @@
 3fb6010c8d1af9774194815389fcf9542e3ecb08:.github/workflows/ios-release.yml:ec-private-key:36
 5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/ios-release.yml:ec-private-key:36
 5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/macos-release.yml:ec-private-key:37
+b6b7d8a7edcd945157bb6e797acabc386a1db0b3:.gitleaksignore:ec-private-key:5
