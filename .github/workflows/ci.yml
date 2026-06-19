@@ -27,8 +27,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone @nself packages (sibling workspace dep)
-        run: git clone --depth=1 https://x-access-token:${{ github.token }}@github.com/nself-org/packages.git "${{ github.workspace }}/../packages"
+      - name: Checkout @nself packages (sibling workspace dep)
+        uses: actions/checkout@v4
+        with:
+          repository: nself-org/packages
+          token: ${{ secrets.GH_PAT_CROSS_REPO }}
+          path: _packages_checkout
+
+      - name: Link packages to sibling path
+        run: |
+          # pnpm-workspace.yaml resolves ../packages/@nself/* relative to clawde root.
+          # actions/checkout can't write outside GITHUB_WORKSPACE, so we checkout
+          # into _packages_checkout inside the workspace and symlink it to the parent path.
+          mkdir -p "${{ github.workspace }}/../packages"
+          ln -s "${{ github.workspace }}/_packages_checkout/@nself" "${{ github.workspace }}/../packages/@nself"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
