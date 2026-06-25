@@ -56,6 +56,10 @@ jobs:
       - name: Install dependencies (workspace root)
         run: pnpm install --frozen-lockfile
 
+      - name: Dependency audit
+        # P4-E5-W3-S05-T17: fail on HIGH/CRITICAL advisories.
+        run: pnpm audit --audit-level=high
+
       - name: Typecheck
         working-directory: apps/desktop
         run: pnpm run typecheck
