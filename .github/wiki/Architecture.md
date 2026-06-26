@@ -10,12 +10,13 @@ ClawDE is built around a single principle: **the daemon is the source of truth, 
 │                                                     │
 │  ┌─────────────┐   JSON-RPC 2.0    ┌─────────────┐  │
 │  │ Desktop app │◄──── WebSocket ───►│    clawd    │  │
-│  │  (Flutter)  │   ws://127.0.0.1  │  (Rust/    │  │
-│  └─────────────┘       :4300       │   Tokio)    │  │
-│                                    │             │  │
-│  ┌─────────────┐                   │  SQLite DB  │  │
-│  │ Mobile app  │◄── relay (mTLS) ──│  Git2       │  │
-│  │  (Flutter)  │   api.clawde.io   │  AI runners │  │
+│  │ (Tauri 2 +  │   ws://127.0.0.1  │  (Rust/    │  │
+│  │  React 19)  │       :4300       │   Tokio)    │  │
+│  └─────────────┘                   │             │  │
+│                                    │  SQLite DB  │  │
+│  ┌─────────────┐                   │  Git2       │  │
+│  │ Mobile app  │◄── relay (mTLS) ──│  AI runners │  │
+│  │ (RN + Expo) │   api.clawde.io   │             │  │
 │  └─────────────┘                   └─────────────┘  │
 └─────────────────────────────────────────────────────┘
 ```
@@ -33,33 +34,37 @@ The daemon runs as a background process on the user's machine. It:
 - Serves a **JSON-RPC 2.0 WebSocket server** on `ws://127.0.0.1:4300`
 - Pushes **server events** to connected clients (new messages, tool calls, status changes)
 
-### Desktop app — Flutter
+### Desktop app — Tauri 2 + React 19
 
-The desktop app is a **thin client** — it contains UI and desktop-platform code only. All state lives in the daemon.
+The desktop app is a **thin client** — it contains UI and desktop-platform code only. All state lives in the daemon. Migrated from Flutter to Tauri 2 + React 19 in P3-E4 (2026-06-16).
 
 - Multi-pane layout: session list → chat → code editor
-- Native OS menus (macOS menu bar, Windows title bar)
+- Native OS menus (macOS menu bar, Windows title bar) via Tauri 2 native menu APIs
 - Keyboard shortcuts optimized for developers
 - Code editor powered by CodeMirror 6 via WebView
 - Platform runners for macOS, Windows, and Linux
+- `@nself/tauri-bridge`, `@nself/types`, `@nself/errors` packages for shared TS types + IPC bridge
 
-### Mobile app — Flutter
+### Mobile app — React Native + Expo
 
-A companion app for monitoring and responding to sessions from a phone.
+A companion app for monitoring and responding to sessions from a phone. Migrated from Flutter to React Native + Expo SDK 53 (RN 0.79.7, React 19) in P3-E4 (2026-06-16).
 
 - Session list with status indicators
 - Full chat view with tool-call approval
 - Bottom-navigation shell optimized for touch
 - Platform runners for iOS and Android
+- `@nself/native-bridge`, `@nself/errors` packages for shared TS types + JSI bridge
 
-### Shared packages
+### Shared TypeScript packages
 
 | Package | Purpose |
 | --- | --- |
-| `clawd_proto` | Dart types mirroring the JSON-RPC protocol (`Session`, `Message`, `ToolCall`, etc.) |
-| `clawd_client` | Typed WebSocket/JSON-RPC client; both apps use this to talk to the daemon |
-| `clawd_core` | Shared Riverpod providers — daemon connection, session list, messages, tool calls |
-| `clawd_ui` | Shared Flutter widgets — `ChatBubble`, `SessionListTile`, `ToolCallCard`, theme |
+| `@nself/types` | Shared TypeScript types mirroring the JSON-RPC protocol (`Session`, `Message`, `ToolCall`, etc.) |
+| `@nself/tauri-bridge` | Typed Tauri IPC bridge for desktop app |
+| `@nself/native-bridge` | Typed JSI bridge for mobile app |
+| `@nself/errors` | Shared error types used by both apps |
+
+> **Note:** The legacy Flutter/Dart packages (`clawd_proto`, `clawd_client`, `clawd_core`, `clawd_ui`) are archived in `apps/packages-flutter-archive/` (DEPRECATED, P3-E4). Do not use.
 
 ### `clawde-intelligence` — Go service (P1)
 
@@ -137,6 +142,8 @@ The startup sequence is strictly ordered (ADR-004):
 3. Write PID file at `~/.local/share/clawde/daemon.pid` using `O_CREAT|O_EXCL` (atomic, race-safe)
 4. Report running state to structured log
 
+> **Client connection note:** Tauri desktop and React Native mobile both connect to the daemon via the shared TypeScript daemon-client module (`apps/packages/`). Never use raw WebSocket from app code; always go through the typed client.
+
 **Platform launch mechanisms:**
 
 | Platform | Mechanism | Agent file |
@@ -169,15 +176,15 @@ All communication between apps and daemon uses **JSON-RPC 2.0 over WebSocket**.
 ## Data flow (sending a message)
 
 ```
-User types → MessageInput widget
-  → ref.read(messageListProvider(id).notifier).send(text)
-    → clawd_client.call('session.sendMessage', {...})
+User types → ChatScreen / ChatInput component
+  → useDaemonClient().sendMessage(text)
+    → daemonClient.call('session.sendMessage', {...})   // TypeScript daemon client
       → clawd daemon receives JSON-RPC request
         → spawns / resumes AI provider subprocess
           → streams output back
             → daemon pushes message.appended events
-              → messageListProvider appends to state
-                → ChatBubble renders new message
+              → useDaemonClient listener appends to local state
+                → message bubble renders new message
 ```
 
 ## MCP Server
