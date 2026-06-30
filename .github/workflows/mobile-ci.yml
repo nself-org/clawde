@@ -44,7 +44,7 @@ jobs:
           ln -s "${{ github.workspace }}/_packages_checkout/@nself" "${{ github.workspace }}/../packages/@nself"
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: '10'
 
