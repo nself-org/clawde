@@ -28,7 +28,7 @@ jobs:
 
       - name: Checkout homebrew-clawde tap
         if: steps.check-token.outputs.skip == 'false'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: clawde-io/homebrew-clawde
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
