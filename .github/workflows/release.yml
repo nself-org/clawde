@@ -45,7 +45,7 @@ jobs:
             os: windows-2022
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # On workflow_dispatch, check out the specified tag so the build is
           # identical to a tag-push run. On push/workflow_call, ref is the tag.
@@ -159,7 +159,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
