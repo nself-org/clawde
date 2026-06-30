@@ -1,7 +1,8 @@
 name: Multi-Arch Check
 
 # Asserts multi-architecture build compatibility.
-# Repo type: Flutter AI dev environment (nself-org/clawde)
+# Repo type: Rust + Tauri 2/React + React Native/Expo (nself-org/clawde)
+# Flutter removed 2026-06-30 — migrating to RN/Tauri per ASI Policy 2.
 # Authority: S30-T05, STORM-CROSS-PLATFORM
 # Template: .claude/docs/doctrines/multi-arch-check.workflow.yml
 
@@ -23,6 +24,6 @@ jobs:
     steps:
       - name: Report repo type
         run: |
-          echo "Repo type: Flutter AI dev environment (nself-org/clawde)"
+          echo "Repo type: Rust + Tauri 2/React + React Native/Expo (nself-org/clawde)"
           echo "No Go binaries or Docker images produced. Multi-arch check N/A. PASS."
 
