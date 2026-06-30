@@ -35,7 +35,7 @@ sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "tls-none", "mi
 
 # Git integration — no subprocess spawning, local operations only (no fetch/push/SSH)
 # vendored-libgit2: statically build libgit2, cross-compilation safe, no OpenSSL needed
-git2 = { version = "0.20", default-features = false, features = ["vendored-libgit2"] }
+git2 = { version = "0.21", default-features = false, features = ["vendored-libgit2"] }
 
 # File watching (cross-platform, debounced)
 notify = "7"

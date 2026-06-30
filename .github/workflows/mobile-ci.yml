@@ -69,7 +69,7 @@ jobs:
 
       - name: Test
         working-directory: apps/mobile
-        run: pnpm run test -- --passWithNoTests
+        run: pnpm run test --passWithNoTests
 
       - name: Upload coverage
         if: always()
