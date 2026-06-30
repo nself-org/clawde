@@ -116,10 +116,11 @@ fn merge_branch_to_main(repo_path: &std::path::Path, branch: &str, task_id: &str
     let branch_ref = repo
         .find_branch(branch, git2::BranchType::Local)
         .with_context(|| format!("branch {} not found", branch))?;
+    // git2 0.21: Reference::name() returns Result<&str, Error> (was Option<&str>).
     let branch_ref_name = branch_ref
         .get()
         .name()
-        .ok_or_else(|| anyhow::anyhow!("branch ref has no name"))?
+        .map_err(|e| anyhow::anyhow!("branch ref has no name: {}", e))?
         .to_string();
 
     let annotated = repo

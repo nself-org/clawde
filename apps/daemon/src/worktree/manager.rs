@@ -328,8 +328,10 @@ fn remove_worktree_blocking(repo_path: &Path, wt_path: &Path) -> Result<()> {
         .context("failed to open repository for worktree removal")?;
 
     // Find the worktree by path comparison.
+    // git2 0.21: StringArray::iter() yields Result<Option<&str>, Error>;
+    // double-flatten extracts &str, skipping Err and None entries.
     let names = repo.worktrees().context("failed to list worktrees")?;
-    for name in names.iter().flatten() {
+    for name in names.iter().filter_map(|r| r.ok().flatten()) {
         if let Ok(wt) = repo.find_worktree(name) {
             if wt.path() == wt_path {
                 wt.prune(None).context("failed to prune worktree")?;
@@ -358,7 +360,8 @@ fn worktree_touches_files(wt_path: &Path, check_files: &[PathBuf]) -> Result<boo
         .context("failed to get worktree status")?;
 
     for entry in statuses.iter() {
-        if let Some(path_str) = entry.path() {
+        // git2 0.21: StatusEntry::path() returns Result<&str, Error> (was Option<&str>).
+        if let Ok(path_str) = entry.path() {
             let changed_path = wt_path.join(path_str);
             for target in check_files {
                 if &changed_path == target {
