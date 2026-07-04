@@ -47,22 +47,52 @@ jobs:
           if [ -f ./cmd/nself/main.go ]; then
             go build -mod=vendor -o /usr/local/bin/nself ./cmd/nself/
           else
-            # Grab the latest nself CLI release from the tap.
-            LATEST=$(curl -fsSL https://api.github.com/repos/nself-org/cli/releases/latest \
-              | grep tag_name | head -1 | cut -d'"' -f4 | sed 's/^v//')
-            OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-            ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-            curl -fsSL "https://github.com/nself-org/cli/releases/download/v${LATEST}/nself-${LATEST}-${OS}-${ARCH}.tar.gz" \
-              | tar -xz -C /tmp
-            sudo mv /tmp/nself /usr/local/bin/nself
+            # Grab the latest nself CLI release from the tap. GitHub's
+            # releases/latest endpoint can 404 transiently right after a tag
+            # is cut (asset upload lag) or hit the 60 req/hr unauthenticated
+            # rate limit — retry with backoff instead of failing the whole
+            # scheduled job on a single flaky request (2026-07-01 incident:
+            # every repo's quarterly run 404'd within the same publish window).
+            LATEST=""
+            for attempt in 1 2 3 4 5; do
+              LATEST=$(curl -fsSL "https://api.github.com/repos/nself-org/cli/releases/latest" \
+                | grep tag_name | head -1 | cut -d'"' -f4 | sed 's/^v//' || true)
+              if [ -n "$LATEST" ]; then
+                break
+              fi
+              echo "Attempt ${attempt}/5: releases/latest not available yet, retrying in $((attempt * 5))s..."
+              sleep $((attempt * 5))
+            done
+
+            if [ -z "$LATEST" ]; then
+              echo "::warning::Could not resolve nself CLI release after 5 attempts — skipping audit tool install, doc audit will run in degraded (findings-only) mode."
+            else
+              OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+              ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+              if curl -fsSL "https://github.com/nself-org/cli/releases/download/v${LATEST}/nself-${LATEST}-${OS}-${ARCH}.tar.gz" \
+                | tar -xz -C /tmp; then
+                sudo mv /tmp/nself /usr/local/bin/nself
+              else
+                echo "::warning::Failed to download nself CLI v${LATEST} — skipping audit tool install."
+              fi
+            fi
           fi
-          nself --version || true
+          nself --version || echo "::notice::nself CLI unavailable this run; doc audit step will no-op gracefully."
 
       - name: Run doc audit
         id: audit
         run: |
           mkdir -p .claude/qa/findings
           REPORT=".claude/qa/findings/${{ steps.quarter.outputs.label }}-doc-audit.json"
+
+          if ! command -v nself >/dev/null 2>&1; then
+            echo "::warning::nself CLI not installed this run (release fetch failed) — skipping audit, will retry next scheduled run."
+            echo '{"skipped":true,"reason":"nself CLI unavailable"}' > "${REPORT}"
+            echo "report=${REPORT}" >> "$GITHUB_OUTPUT"
+            echo "exit=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           set +e
           nself audit docs \
             --root "${GITHUB_WORKSPACE}" \
