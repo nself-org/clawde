@@ -6,30 +6,27 @@
  * SPORT: T-E1-06 — React Native Expo migration
  */
 
-// Mock @nself/native-bridge ExpoSecureStore before importing the store
+// Mock @nself/native-bridge ExpoSecureStore before importing the store.
+// Real ExpoSecureStore (packages/@nself/native-bridge/src/secure-store.ts)
+// implements the canonical SecureStoreInterface: get/set/delete, raw string
+// values, void writes, throws SecureStoreError on failure — NOT the
+// getItem/setItem/deleteItem + Result-tuple shape this mock previously used.
 const mockStore: Record<string, string> = {};
 jest.mock('@nself/native-bridge', () => {
   return {
     ExpoSecureStore: jest.fn().mockImplementation(() => ({
-      getItem: jest.fn((key: string) =>
-        Promise.resolve({ _tag: 'Ok' as const, value: mockStore[key] ?? null }),
-      ),
-      setItem: jest.fn((key: string, val: string) => {
+      get: jest.fn((key: string) => Promise.resolve(mockStore[key] ?? null)),
+      set: jest.fn((key: string, val: string) => {
         mockStore[key] = val;
-        return Promise.resolve({ _tag: 'Ok' as const, value: undefined });
+        return Promise.resolve();
       }),
-      deleteItem: jest.fn((key: string) => {
+      delete: jest.fn((key: string) => {
         delete mockStore[key];
-        return Promise.resolve({ _tag: 'Ok' as const, value: undefined });
+        return Promise.resolve();
       }),
     })),
   };
 });
-
-// Mock @nself/errors isOk helper (simple passthrough for the Ok tag)
-jest.mock('@nself/errors', () => ({
-  isOk: (r: { _tag: string }) => r._tag === 'Ok',
-}));
 
 // Mock the daemon so switchHost doesn't try to open a WebSocket
 jest.mock('../lib/daemon', () => ({
