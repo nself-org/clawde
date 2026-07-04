@@ -26,10 +26,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Checkout @nself packages (sibling workspace dep)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: nself-org/packages
           token: ${{ secrets.GH_PAT_CROSS_REPO }}
