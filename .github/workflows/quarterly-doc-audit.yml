@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       apply_autofix:
-        description: "Apply safe auto-fixes and open a PR"
+        description: "Apply safe auto-fixes and open a PR (needs org PR-creation permission)"
         required: false
-        default: "true"
+        default: "false"
 
 permissions:
   contents: write
