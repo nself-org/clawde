@@ -111,7 +111,10 @@ jobs:
 
       - name: Apply auto-fixes (banned words only)
         id: fix
-        if: ${{ github.event.inputs.apply_autofix != 'false' }}
+        # Scheduled runs report findings (uploaded as an artifact) but never
+        # auto-open a PR — the org disallows Actions creating PRs, and applying
+        # doc fixes is an explicit human action. Run manually with apply_autofix=true.
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.apply_autofix == 'true' }}
         run: |
           set +e
           nself audit docs \
@@ -122,7 +125,10 @@ jobs:
           echo "ran=true" >> "$GITHUB_OUTPUT"
 
       - name: Open auto-fix PR
-        if: ${{ github.event.inputs.apply_autofix != 'false' }}
+        # Scheduled runs report findings (uploaded as an artifact) but never
+        # auto-open a PR — the org disallows Actions creating PRs, and applying
+        # doc fixes is an explicit human action. Run manually with apply_autofix=true.
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.apply_autofix == 'true' }}
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "docs(audit): quarterly sweep ${{ steps.quarter.outputs.label }}"
