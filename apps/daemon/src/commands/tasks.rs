@@ -118,11 +118,7 @@ pub async fn run_tasks(
         }
 
         TasksAction::Done {
-            id,
-            task,
-            notes,
-            agent: _,
-            ..
+            id, task, notes, ..
         } => {
             let task_id = resolve_task_id(id, task)?;
             let notes_text = notes.ok_or_else(|| anyhow::anyhow!("--notes required for done"))?;

@@ -48,22 +48,8 @@ yanked = "deny"
 # Advisory ignore list — all entries are transitive dependencies with no available patch.
 # Re-evaluate on each Cargo.lock refresh.
 #
-# RUSTSEC-2023-0071: Marvin Attack in rsa crate (via sqlx-mysql). No upstream fix.
 #   clawd uses MySQL support only for plugin compatibility; the RSA path is not exercised.
-# RUSTSEC-2024-0384: instant crate unmaintained. Transitive via indicatif.
-# RUSTSEC-2024-0436: paste crate unmaintained. Transitive via several proc-macro deps.
-# RUSTSEC-2025-0119: number_prefix crate unmaintained. Transitive via indicatif.
-# RUSTSEC-2026-0002: lru unsound with custom allocator. clawd uses the default allocator.
-# RUSTSEC-2026-0097: rand unsound with custom logger. clawd uses the default logger.
-# RUSTSEC-2026-0104: Reachable panic in rustls CRL parsing. clawd does not parse CRLs.
 ignore = [
-    { id = "RUSTSEC-2023-0071", reason = "Transitive via sqlx-mysql; no upstream fix. clawd does not exercise the RSA path." },
-    { id = "RUSTSEC-2024-0384", reason = "Transitive via indicatif; crate unmaintained but no replacement available." },
-    { id = "RUSTSEC-2024-0436", reason = "Transitive proc-macro dep; crate unmaintained but no replacement available." },
-    { id = "RUSTSEC-2025-0119", reason = "Transitive via indicatif; crate unmaintained but no replacement available." },
-    { id = "RUSTSEC-2026-0002", reason = "Transitive lru dep; unsound only with custom allocators. clawd uses default allocator." },
-    { id = "RUSTSEC-2026-0097", reason = "Transitive rand dep; unsound only with custom logger. clawd uses default logger." },
-    { id = "RUSTSEC-2026-0104", reason = "Transitive rustls dep; clawd does not perform CRL parsing. Tracked for upstream fix." },
 ]
 
 [sources]
