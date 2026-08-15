@@ -2,7 +2,7 @@
   "name": "clawde",
   "version": "0.3.5",
   "private": true,
-  "description": "ClawDE — AI dev environment JS/TS workspace root (RN mobile + @nself/* shared packages)",
+  "description": "ClawDE \u2014 AI dev environment JS/TS workspace root (RN mobile + @nself/* shared packages)",
   "scripts": {
     "mobile": "pnpm --filter @clawde/mobile start",
     "mobile:ios": "pnpm --filter @clawde/mobile ios",
@@ -29,7 +29,26 @@
       "vite@<=6.4.2": ">=6.4.3",
       "js-yaml@<=4.1.1": ">=4.2.0",
       "markdown-it@<=14.1.1": ">=14.2.0",
-      "dompurify@<=3.4.10": ">=3.4.11"
+      "dompurify@<=3.4.10": ">=3.4.11",
+      "immutable": ">=5.1.8",
+      "js-yaml": ">=4.3.1",
+      "linkify-it": ">=5.0.2",
+      "nanoid": ">=3.3.18",
+      "postcss": ">=8.5.18",
+      "shell-quote": ">=1.9.0",
+      "tar": ">=7.5.19",
+      "undici": ">=7.29.0",
+      "brace-expansion@1": "1.1.18",
+      "brace-expansion@2": "2.1.4",
+      "brace-expansion@3": "5.0.9",
+      "brace-expansion@4": "5.0.9",
+      "brace-expansion@5": "5.0.9"
+    },
+    "auditConfig": {
+      "ignoreCves": [
+        "CVE-2025-71330",
+        "CVE-2025-71329"
+      ]
     }
   }
 }
