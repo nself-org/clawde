@@ -147,7 +147,7 @@ impl VersionWatcher {
     async fn poll_once(&self) {
         let mut repos = self.repos.write().await;
 
-        for (_key, entry) in repos.iter_mut() {
+        for entry in repos.values_mut() {
             for file in entry.files.iter_mut() {
                 let filename = match file.path.file_name() {
                     Some(n) => n.to_string_lossy().to_string(),
