@@ -15,3 +15,10 @@ updates:
     commit-message:
       prefix: 'ci'
       include: scope
+    ignore:
+      # setup-node v7 changes how the pnpm store is linked and breaks the
+      # Desktop typecheck job. Reverted once in e450991d, then re-landed by
+      # mistake via #46. Stay on v6 until the pnpm linking issue is resolved.
+      - dependency-name: actions/setup-node
+        versions:
+          - '>=7'
