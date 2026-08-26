@@ -5,7 +5,8 @@
 # Fails if any metric drops >5% from baseline.
 # SPORT: F-MASTER.md F-AI-GATEWAY:observability-evals
 #
-# Pass thresholds: MRR >= 0.75, NDCG@10 >= 0.70, P@5 >= 0.65
+# Pass thresholds: MRR >= 0.75, NDCG@10 >= 0.70, P@5 >= 0.60
+# (P@5 ceiling is 3/5 — fixtures carry 3 relevant docs each. See run_eval.sh.)
 
 name: Retrieval Eval Regression Gate
 
