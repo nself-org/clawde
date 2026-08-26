@@ -23,9 +23,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      # hadolint/hadolint-action's `recursive: true` still forwards the default
+      # `dockerfile: **/Dockerfile` to hadolint, which does not glob. hadolint
+      # then tries to open a file literally named "**/Dockerfile" and dies with
+      #   hadolint: **/Dockerfile: withBinaryFile: does not exist
+      # That is why this job had never produced a passing run.
+      #
+      # Discovering the files with git and feeding them in explicitly removes the
+      # dependency on the action's glob handling, and fails loudly if the repo
+      # ever has no Dockerfile at all rather than silently linting nothing.
+      - name: Discover Dockerfiles
+        id: find
+        run: |
+          set -euo pipefail
+          files=$(git ls-files | grep -E '(^|/)Dockerfile([.-].*)?$' || true)
+          if [ -z "$files" ]; then
+            echo "::error::No Dockerfile found, but this workflow is gated on Dockerfile paths."
+            exit 1
+          fi
+          echo "Found:"; printf '  %s\n' $files
+          # newline-delimited into a multiline output
+          {
+            echo "files<<EOF"
+            printf '%s\n' "$files"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run hadolint
-        uses: hadolint/hadolint-action@v3.4.0
-        with:
-          recursive: true
-          failure-threshold: error
-          ignore: DL3008,DL3009,DL3015
+        run: |
+          set -euo pipefail
+          rc=0
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            echo "── $f"
+            docker run --rm -i hadolint/hadolint:v2.12.0 \
+              hadolint --failure-threshold error \
+                       --ignore DL3008 --ignore DL3009 --ignore DL3015 \
+                       - < "$f" || rc=1
+          done <<< "${{ steps.find.outputs.files }}"
+          exit "$rc"
