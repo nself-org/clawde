@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'intelligence/**'
+      - '.github/workflows/go-intelligence.yml'
   pull_request:
     branches: [main]
     paths:
       - 'intelligence/**'
+      - '.github/workflows/go-intelligence.yml'
   workflow_dispatch:
 
 concurrency:
