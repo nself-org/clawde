@@ -11,7 +11,21 @@
 #   Subsequent runs fail if any metric drops >5% from baseline.
 #
 # Pass thresholds:
-#   MRR >= 0.75 (hybrid), NDCG@10 >= 0.70, P@5 >= 0.65
+#   MRR >= 0.75 (hybrid), NDCG@10 >= 0.70, P@5 >= 0.60
+#
+# On P@5: every fixture in datasets/*.jsonl carries exactly 3 entries in
+# expected_top_k_ids, so precision@5 is capped at 3/5 = 0.60 by construction.
+# The previous threshold of 0.65 was therefore unreachable no matter how good
+# retrieval was — and indeed the gate failed while reporting MRR 1.0 and
+# NDCG@10 1.0, i.e. perfect ranking. 0.60 is the ceiling; a stricter precision
+# gate needs either more relevant docs per fixture or P@3 (which would be 1.0
+# today) rather than a number the metric cannot reach.
+#
+# The aggregates are rounded to 4dp before comparison. The mean of 22 values of
+# 0.6 lands on 0.5999999999999998 in floating point, so comparing raw against a
+# literal 0.60 fails a perfect run. Rounding fixes that without loosening the
+# gate: dropping a single relevant doc in one query gives 0.5909, which still
+# fails. Lowering the threshold instead would have admitted that regression.
 #   Latency p95 <= 500ms (checked against --latency-p95 flag if provided)
 #   Cost per query <= $0.002 (checked against --cost-per-query flag if provided)
 
@@ -31,7 +45,7 @@ COST_PER_QUERY=""
 # ─── Thresholds ────────────────────────────────────────────────────────────────
 THRESHOLD_MRR=0.75
 THRESHOLD_NDCG=0.70
-THRESHOLD_P5=0.65
+THRESHOLD_P5=0.60
 THRESHOLD_LATENCY_P95_MS=500
 THRESHOLD_COST_USD=0.002
 REGRESSION_DELTA=0.05  # 5% drop = failure
@@ -190,9 +204,11 @@ NODESCRIPT
 
 # Run metric computation
 METRICS_JSON=$(echo "$NODE_SCRIPT" | node - "$DATASET" "$TOP_K" "$MODEL")
-AGGREGATE_MRR=$(echo "$METRICS_JSON" | jq -r '.aggregate.mrr')
-AGGREGATE_NDCG=$(echo "$METRICS_JSON" | jq -r '.aggregate.ndcg_at_10')
-AGGREGATE_P5=$(echo "$METRICS_JSON" | jq -r '.aggregate.precision_at_5')
+# Round to 4dp: these are means over the fixture set, so exact values like 0.6
+# arrive as 0.5999999999999998 and lose a literal threshold comparison.
+AGGREGATE_MRR=$(echo "$METRICS_JSON" | jq -r '(.aggregate.mrr * 10000 | round) / 10000')
+AGGREGATE_NDCG=$(echo "$METRICS_JSON" | jq -r '(.aggregate.ndcg_at_10 * 10000 | round) / 10000')
+AGGREGATE_P5=$(echo "$METRICS_JSON" | jq -r '(.aggregate.precision_at_5 * 10000 | round) / 10000')
 
 # ─── Threshold checks ──────────────────────────────────────────────────────────
 FAILURES=()
