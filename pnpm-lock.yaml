@@ -279,6 +279,19 @@ importers:
         specifier: ^3.2.6
         version: 3.2.6(@types/node@22.19.21)(jiti@2.7.0)(jsdom@29.1.1)(lightningcss@1.27.0)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(terser@5.48.0)(yaml@2.9.0)
 
+  ../packages/@nself/tailwind-brand:
+    dependencies:
+      tailwindcss:
+        specifier: '>=3.0.0 || >=4.0.0'
+        version: 4.3.3
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^3.2.6
+        version: 3.2.6(@types/node@22.19.21)(jiti@2.7.0)(jsdom@29.1.1)(lightningcss@1.27.0)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(terser@5.48.0)(yaml@2.9.0)
+
   ../packages/@nself/tauri-bridge:
     dependencies:
       '@nself/errors':
@@ -7097,6 +7110,9 @@ packages:
 
   tailwind-merge@2.6.1:
     resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
+
+  tailwindcss@4.3.3:
+    resolution: {integrity: sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==}
 
   tar@7.5.22:
     resolution: {integrity: sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==}
@@ -15973,6 +15989,8 @@ snapshots:
   tagged-tag@1.0.0: {}
 
   tailwind-merge@2.6.1: {}
+
+  tailwindcss@4.3.3: {}
 
   tar@7.5.22:
     dependencies:

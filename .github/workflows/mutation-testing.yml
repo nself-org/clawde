@@ -20,6 +20,7 @@ on:
       - "apps/daemon/src/agents/capabilities.rs"
       - "apps/daemon/src/agents/prompt_cache.rs"
       - "apps/daemon/src/agents/provider_session.rs"
+      - '.github/workflows/mutation-testing.yml'
   workflow_dispatch:
 
 jobs:
