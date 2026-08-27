@@ -131,7 +131,21 @@ impl AuditLog {
             *guard = Some(f);
         }
 
-        guard.as_mut().unwrap().write_all(bytes).await?;
+        let file = guard.as_mut().unwrap();
+        file.write_all(bytes).await?;
+        // tokio::fs::File buffers, so write_all alone leaves the entry sitting
+        // in userspace memory. append() would return as though it had succeeded
+        // while nothing was readable and nothing survived a crash, which for an
+        // AUDIT log is the one failure mode that matters. It also made
+        // appends_line_to_file flaky: the test reads the file immediately and
+        // saw an empty one whenever the buffer had not drained yet.
+        //
+        // flush() pushes the bytes to the OS, which is what makes them visible
+        // to any other reader and what the test actually depends on. Deliberately
+        // not sync_data(): an fsync per entry is a durability/throughput
+        // trade-off worth making on purpose, not as a side effect of fixing a
+        // flake. Entries can still be lost to a machine-level crash.
+        file.flush().await?;
         Ok(())
     }
 }
