@@ -402,8 +402,34 @@ impl Runner for CursorRunner {
 mod tests {
     use super::*;
 
+    /// Serialises the tests that mutate CURSOR_TOKEN.
+    ///
+    /// `std::env::set_var` and `remove_var` act on process-global state, and
+    /// Rust runs tests in parallel threads by default, so two tests touching
+    /// the same variable race: one can clear or overwrite it while the other
+    /// sits between its set and its read. That is exactly how
+    /// test_detect_cursor_token_from_env failed in CI (655 passed, 1 failed)
+    /// while passing locally and on main -- it depended on the interleaving.
+    ///
+    /// A lock is enough here and avoids pulling in a crate for two tests. The
+    /// guard is taken for the whole set/read/remove sequence, never just the
+    /// set.
+    static CURSOR_TOKEN_ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    /// Takes the env lock, tolerating a poisoned mutex.
+    ///
+    /// A panic in one of these tests would otherwise poison the lock and turn
+    /// a single failure into every sibling failing for an unrelated reason,
+    /// which buries the real one.
+    fn lock_cursor_token_env() -> std::sync::MutexGuard<'static, ()> {
+        CURSOR_TOKEN_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
     #[test]
     fn test_detect_cursor_token_from_env() {
+        let _guard = lock_cursor_token_env();
         std::env::set_var("CURSOR_TOKEN", "test_tok_123");
         let tok = detect_cursor_token();
         std::env::remove_var("CURSOR_TOKEN");
@@ -412,6 +438,7 @@ mod tests {
 
     #[test]
     fn test_detect_cursor_token_empty_env_skipped() {
+        let _guard = lock_cursor_token_env();
         std::env::set_var("CURSOR_TOKEN", "   ");
         let result = detect_cursor_token();
         std::env::remove_var("CURSOR_TOKEN");
