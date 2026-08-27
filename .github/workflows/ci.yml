@@ -27,6 +27,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # GH_PAT_CROSS_REPO is a REPOSITORY secret, and Dependabot-triggered runs
+      # read from a separate Dependabot secret store, so on every Dependabot PR
+      # this token is empty and the checkout below fails with the unhelpful
+      # "Input required and not supplied: token". That says nothing about which
+      # secret, which store, or what to do, and it has made every Dependabot PR
+      # on this repo look broken when the bump itself was fine.
+      - name: Check cross-repo token is available
+        run: |
+          if [ -z "${{ secrets.GH_PAT_CROSS_REPO }}" ]; then
+            echo "::error::GH_PAT_CROSS_REPO is empty for this run."
+            echo "::error::This job checks out the private nself-org/packages repo and cannot run without it."
+            if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+              echo "::error::This is a Dependabot run. Repository secrets are NOT visible to Dependabot;"
+              echo "::error::add it under Settings > Secrets and variables > Dependabot."
+            fi
+            exit 1
+          fi
+
       - name: Checkout @nself packages (sibling workspace dep)
         uses: actions/checkout@v7
         with:
