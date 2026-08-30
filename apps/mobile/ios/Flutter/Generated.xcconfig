@@ -1,6 +1,6 @@
 // This is a generated file; do not edit or check into version control.
-FLUTTER_ROOT=/Volumes/X9/fluttersdk
-FLUTTER_APPLICATION_PATH=/Volumes/X9/Sites/nself/clawde/apps/mobile
+FLUTTER_ROOT=/Volumes/UG/fluttersdk
+FLUTTER_APPLICATION_PATH=/Volumes/UG/Sites/nself/clawde/apps/mobile
 COCOAPODS_PARALLEL_CODE_SIGN=true
 FLUTTER_TARGET=lib/main.dart
 FLUTTER_BUILD_DIR=build
