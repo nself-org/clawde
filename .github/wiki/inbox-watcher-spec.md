@@ -186,12 +186,12 @@ project scope list.
 
 ```toml
 [projects.nself]
-inbox_path = "/Volumes/X9/Sites/nself/.claude/inbox"
-archive_path = "/Volumes/X9/Sites/nself/.claude/archive/inbox"
+inbox_path = "/Volumes/UG/Sites/nself/.claude/inbox"
+archive_path = "/Volumes/UG/Sites/nself/.claude/archive/inbox"
 
 [projects.unity]
-inbox_path = "/Volumes/X9/Sites/unyeco/.claude/inbox"
-archive_path = "/Volumes/X9/Sites/unyeco/.claude/archive/inbox"
+inbox_path = "/Volumes/UG/Sites/unyeco/.claude/inbox"
+archive_path = "/Volumes/UG/Sites/unyeco/.claude/archive/inbox"
 ```
 
 **Enforcement:**

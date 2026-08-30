@@ -214,13 +214,13 @@ Drop a mock CRD-format message into `.claude/inbox/`:
 cat > /path/to/project/.claude/inbox/msg-2026-06-01-test-bug-report.md <<'MSG'
 ---
 chain_id: "test-chain-001-mock"
-from: "nself (/Volumes/X9/Sites/nself)"
-to: "clawde (/Volumes/X9/Sites/nself/clawde)"
+from: "nself (/Volumes/UG/Sites/nself)"
+to: "clawde (/Volumes/UG/Sites/nself/clawde)"
 subject: "Test: mock bug report for parity adapter"
 priority: medium
 type: bug
 status: pending
-reply_to: "/Volumes/X9/Sites/nself/.claude/inbox"
+reply_to: "/Volumes/UG/Sites/nself/.claude/inbox"
 ---
 
 ## Context
