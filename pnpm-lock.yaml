@@ -243,6 +243,9 @@ importers:
       fake-indexeddb:
         specifier: ^6.0.0
         version: 6.2.5
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1
       vitest:
         specifier: ^3.2.6
         version: 3.2.6(@types/node@22.19.21)(jiti@2.7.0)(jsdom@29.1.1)(lightningcss@1.27.0)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(terser@5.48.0)(yaml@2.9.0)
