@@ -23,6 +23,9 @@ on:
       - '.github/workflows/mutation-testing.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   mutation-test:
     name: cargo-mutants
