@@ -1,6 +1,7 @@
 {
   "name": "clawde",
   "version": "0.3.5",
+  "license": "MIT",
   "private": true,
   "description": "ClawDE \u2014 AI dev environment JS/TS workspace root (RN mobile + @nself/* shared packages)",
   "scripts": {
