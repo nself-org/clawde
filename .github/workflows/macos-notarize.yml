@@ -45,6 +45,7 @@ jobs:
     runs-on: macos-latest
     # Disabled until Apple Developer certs are configured in repository secrets.
     # Remove this line to enable: see NOTARY.1-4 task.
+    # Gate: EXTERNAL-GATES.md row "Apple Developer Program ($99/yr)" (P9 mobile/desktop/tv, currently OPEN)
     if: false
 
     steps:
