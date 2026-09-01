@@ -8,6 +8,7 @@ package worker
 import (
 	"context"
 	"errors"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -314,7 +315,11 @@ func TestPool_50Jobs_StubStore(t *testing.T) {
 // Requires CLAWDE_TEST_PG_DSN to be set with a Postgres DSN that has pgmq installed.
 // Skip gracefully in CI. Run locally: CLAWDE_TEST_PG_DSN=postgres://... go test -run Integration ./...
 func TestPool_Integration_Postgres(t *testing.T) {
-	dsn := ""
+	// P6-E11-W2-S3-T15 (CI-masking sweep): this used to read `dsn := ""` — a
+	// hardcoded empty string that could never be satisfied by any
+	// environment, making the "skip when no test database is configured"
+	// comment above misleading (bug ledger: clawde-worker-test-always-skips.md).
+	dsn := os.Getenv("CLAWDE_TEST_PG_DSN")
 	if dsn == "" {
 		t.Skip("Skipping Postgres integration test: CLAWDE_TEST_PG_DSN not set")
 	}
@@ -329,7 +334,8 @@ func TestPool_Integration_Postgres(t *testing.T) {
 // TestListenNotify_Integration_Postgres verifies NOTIFY received by Go subscriber <1s.
 // Skipped without CLAWDE_TEST_PG_DSN.
 func TestListenNotify_Integration_Postgres(t *testing.T) {
-	dsn := ""
+	// P6-E11-W2-S3-T15: same always-skip fix as TestPool_Integration_Postgres above.
+	dsn := os.Getenv("CLAWDE_TEST_PG_DSN")
 	if dsn == "" {
 		t.Skip("Skipping LISTEN/NOTIFY integration test: CLAWDE_TEST_PG_DSN not set")
 	}
