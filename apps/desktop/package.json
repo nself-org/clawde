@@ -63,5 +63,10 @@
     "ts-jest": "^29.2.1",
     "typescript": "^5.5.3",
     "vite": "^6.3.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "browserslist@<4.28.7": "^4.28.7"
+    }
   }
 }
