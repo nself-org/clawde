@@ -15,6 +15,10 @@ jobs:
   clawd-review:
     name: AI Code Review
     runs-on: ubuntu-latest
+    # Dependabot PRs run with no repo secrets (Actions secrets are withheld from
+    # Dependabot-triggered runs) and gain nothing from an AI review of a version
+    # bump, so skip cleanly for bot actors instead of trying to serve them.
+    if: github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -22,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: ClawDE AI Review
-        uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1.0.210
+        uses: anthropics/claude-code-action@d75b94d5ad426cb8546e6628b6f5f19b84e5cce1 # v1.0.216
         with:
           prompt: >
             Review this pull request for:
