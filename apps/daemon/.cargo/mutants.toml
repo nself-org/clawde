@@ -1,0 +1,61 @@
+# cargo-mutants configuration — Sprint BB TH.1
+#
+# Focus on critical modules: session, security, policy, license, IPC auth,
+# intelligence, the agent routing/capability surface, and the storage entry
+# point. Target 80%+ mutation kill rate.
+#
+# Run with: cd apps/daemon && cargo mutants
+# CI:       .github/workflows/mutation-testing.yml
+#
+# LOCATION MATTERS. cargo-mutants auto-loads `.cargo/mutants.toml` relative to
+# where it runs, and nothing else. This file lived at apps/daemon/mutants.toml,
+# where it was never read: with the corrected contents below, plain
+# `cargo mutants` in apps/daemon still reported 422 files from that path and 47
+# from here. A workspace-root .cargo/mutants.toml does not apply either — also
+# 422 — because the globs resolve against the crate being tested. Measured all
+# three, 2026-09-14. Do not move this file back up a level.
+#
+# THIS FILE DID NOT PARSE UNTIL 2026-09-14. It wrapped every key in a
+# `[default]` table, and cargo-mutants has no such section — `cargo mutants
+# --config mutants.toml` reports `unknown field 'default'` and refuses. The
+# automatic load path is silent about it, so `cargo mutants` simply ran with no
+# configuration at all: 422 files and 6,980 mutants instead of the 47 files and
+# 894 mutants scoped below. At roughly a minute a mutant that is about 115 hours
+# of work, which is why every scheduled run since 2026-08-27 was killed by the
+# job's 120-minute timeout with no kill rate ever reported.
+#
+# The key was also named wrong. cargo-mutants calls it `examine_globs`, not
+# `include_globs` (`--file` on the command line); `include_globs` would be
+# rejected the same way even without the `[default]` wrapper.
+#
+# Keys must stay at the top level. Verify any change to this file with
+#   cd apps/daemon && cargo mutants --list-files --config mutants.toml | wc -l
+# which must print 47, not 422. A silent jump back to 422 is this bug returning.
+
+examine_globs = [
+    "src/session/**/*.rs",
+    "src/security/**/*.rs",
+    "src/policy/**/*.rs",
+    "src/license/**/*.rs",
+    "src/ipc/auth.rs",
+    "src/intelligence/**/*.rs",
+    "src/agents/routing.rs",
+    "src/agents/capabilities.rs",
+    "src/agents/prompt_cache.rs",
+    "src/agents/provider_session.rs",
+    "src/storage/mod.rs",
+]
+
+exclude_globs = [
+    # Test files themselves.
+    "src/**/*_test*.rs",
+    "src/**/tests*.rs",
+]
+
+# Mutation runs re-run the whole suite per mutant, so a mutant that makes a
+# test hang needs more headroom than a normal run.
+timeout_multiplier = 3.0
+
+# NOTE: `error_count_limit` was dropped, not moved. cargo-mutants 27 rejects it
+# (`unknown field`), so keeping it would reintroduce the parse failure above and
+# silently un-scope the whole run again.
