@@ -27,29 +27,28 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # GH_PAT_CROSS_REPO is a REPOSITORY secret, and Dependabot-triggered runs
-      # read from a separate Dependabot secret store, so on every Dependabot PR
-      # this token is empty and the checkout below fails with the unhelpful
-      # "Input required and not supplied: token". That says nothing about which
-      # secret, which store, or what to do, and it has made every Dependabot PR
-      # on this repo look broken when the bump itself was fine.
-      - name: Check cross-repo token is available
-        run: |
-          if [ -z "${{ secrets.GH_PAT_CROSS_REPO }}" ]; then
-            echo "::error::GH_PAT_CROSS_REPO is empty for this run."
-            echo "::error::This job checks out the private nself-org/packages repo and cannot run without it."
-            if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
-              echo "::error::This is a Dependabot run. Repository secrets are NOT visible to Dependabot;"
-              echo "::error::add it under Settings > Secrets and variables > Dependabot."
-            fi
-            exit 1
-          fi
-
+      # Token for the cross-repo checkout below, preferring GH_PAT_CROSS_REPO
+      # and falling back to the run's own GITHUB_TOKEN.
+      #
+      # nself-org/packages is PUBLIC (verified 2026-09-14: unauthenticated
+      # api.github.com and git-upload-pack both return 200), so GITHUB_TOKEN is
+      # sufficient to clone it. The PAT is still preferred where it exists: it
+      # carries a higher API rate limit, and it keeps this job working if the
+      # repo is ever made private again.
+      #
+      # The fallback is what makes Dependabot PRs work. GH_PAT_CROSS_REPO is a
+      # REPOSITORY secret and Dependabot-triggered runs read from a separate
+      # Dependabot secret store, so on a Dependabot PR the PAT is always the
+      # empty string. This step previously hard-failed in that case, which made
+      # every Dependabot PR on this repo unmergeable — the required check could
+      # not pass by construction, no matter how sound the bump was. It failed on
+      # a premise that is no longer true (packages was private when that guard
+      # was written).
       - name: Checkout @nself packages (sibling workspace dep)
         uses: actions/checkout@v7
         with:
           repository: nself-org/packages
-          token: ${{ secrets.GH_PAT_CROSS_REPO }}
+          token: ${{ secrets.GH_PAT_CROSS_REPO || github.token }}
           path: _packages_checkout
 
       - name: Link packages to sibling path
