@@ -3,6 +3,28 @@ name: Mutation Testing
 # Sprint BB TH.1 — cargo-mutants on critical daemon modules
 # Runs weekly + on push to main targeting session/security/policy modules.
 # Target: 80%+ mutation kill rate.
+#
+# This gate produced no result at all between 2026-08-27 and 2026-09-14. Four
+# independent defects, each documented at the step or file that fixes it:
+#   1. mutants.toml sat at apps/daemon/mutants.toml, which cargo-mutants does
+#      not read. Auto-load is .cargo/mutants.toml, relative to the crate.
+#   2. its contents would not have parsed anyway — every key was wrapped in a
+#      `[default]` table that cargo-mutants rejects, and the scope key is called
+#      examine_globs, not include_globs. So the run was never scoped: 6,980
+#      mutants across 422 files instead of 894 across 47.
+#   3. even correctly scoped, 894 mutants at roughly a minute each is about 15
+#      hours — one job cannot do it in 120 minutes. Hence the shard matrix.
+#   4. the kill-rate check tested `-f mutants-out/mutants.out`, which is a
+#      DIRECTORY, so it always took its "first run" branch and exited 0. It
+#      could not have failed, whatever the kill rate was.
+#
+# Every one of those runs ended `cancelled` rather than `failure` — the job hit
+# its own timeout — and a cancelled check is neither red nor pending, so nothing
+# reported it for three weeks.
+#
+# Consequence worth stating plainly: the 80% target in this file has never once
+# been evaluated. The first green run under these fixes is the first real
+# measurement, and it may well be below target. That is the gate working.
 
 on:
   schedule:
@@ -20,17 +42,32 @@ on:
       - "apps/daemon/src/agents/capabilities.rs"
       - "apps/daemon/src/agents/prompt_cache.rs"
       - "apps/daemon/src/agents/provider_session.rs"
+      - "apps/daemon/.cargo/mutants.toml"
       - '.github/workflows/mutation-testing.yml'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   mutation-test:
-    name: cargo-mutants
+    name: cargo-mutants ${{ matrix.shard }}/12
     runs-on: ubuntu-latest
     timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # cargo-mutants shards are ZERO-indexed: `--shard k/n` requires k < n,
+        # and `--shard 12/12` is rejected outright. The --help example ("e.g.
+        # 1/4") reads as 1-based and is not.
+        #
+        # Verified locally against the scoped config: shards 0..11 partition the
+        # 894 mutants exactly (75 each, summing to 894, no overlap). Twelve is
+        # sized off the one measurement available — the 2026-09-14 run completed
+        # 105 mutants in its 119 usable minutes, so ~60s a mutant, so ~75 min a
+        # shard plus the baseline build. If the mutant count grows this number
+        # has to grow with it; the summary job asserts all twelve reported, so
+        # a shard that starts timing out shows up as a missing report, not as a
+        # quietly smaller denominator.
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     steps:
       - uses: actions/checkout@v7
@@ -50,43 +87,146 @@ jobs:
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
 
-      - name: Run mutation tests
+      - name: Assert mutants.toml is actually in effect
         working-directory: apps/daemon
         run: |
-          cargo mutants \
-            --output mutants-out \
-            --no-shuffle \
-            2>&1 | tee mutants-report.txt
-
-      - name: Check kill rate
-        working-directory: apps/daemon
-        run: |
-          if [ -f mutants-out/mutants.out ]; then
-            python3 - <<'EOF'
-          import json, sys
-          with open("mutants-out/mutants.out") as f:
-              data = json.load(f)
-          total = data.get("total_mutants", 0)
-          killed = data.get("caught", 0)
-          if total == 0:
-              print("No mutants generated — check include_globs in mutants.toml")
-              sys.exit(0)
-          kill_rate = killed / total * 100
-          print(f"Kill rate: {killed}/{total} = {kill_rate:.1f}%")
-          if kill_rate < 80.0:
-              print(f"FAIL: kill rate {kill_rate:.1f}% < 80% target")
-              sys.exit(1)
-          else:
-              print("PASS: 80% target met")
-          EOF
-          else
-            echo "mutants.out not found — treating as first run"
+          set -euo pipefail
+          # The whole failure mode this workflow is recovering from was a config
+          # file that silently did nothing. An explicit --config makes a parse
+          # error fatal instead of silent, and the file count proves the scope
+          # was applied: 47 files with the config, 422 without it.
+          FILES=$(cargo mutants --list-files --config .cargo/mutants.toml | wc -l | tr -d ' ')
+          echo "files in scope: ${FILES}"
+          if [ "$FILES" -gt 100 ]; then
+            echo "::error::mutants.toml is not scoping the run — ${FILES} files are in scope, expected ~47. The config parsed but matched far too much, or it stopped being applied."
+            exit 1
           fi
 
-      - name: Upload mutation report
-        if: always()
+      - name: Run mutation tests (shard ${{ matrix.shard }}/12)
+        working-directory: apps/daemon
+        run: |
+          set -uo pipefail
+          set +e
+          cargo mutants \
+            --config .cargo/mutants.toml \
+            --shard ${{ matrix.shard }}/12 \
+            --output mutants-out \
+            --no-shuffle \
+            2>&1 | tee mutants-report-${{ matrix.shard }}.txt
+          RC=${PIPESTATUS[0]}
+          echo "cargo-mutants exit code: ${RC}"
+
+          # Not continue-on-error. cargo-mutants uses its exit code to say WHAT
+          # happened, and only one of those meanings is "this shard is fine but
+          # some mutants lived" — which is data for the summary, not a broken
+          # build. Blanket-ignoring the code would swallow the two that mean the
+          # measurement is worthless:
+          #
+          #   0  every viable mutant caught
+          #   2  some mutants survived            <- expected; summary judges it
+          #   1  usage error (bad args/config)
+          #   3  tests timed out                  <- timeout_multiplier too low
+          #   4  baseline tests already failing   <- nothing was measured at all
+          #   5/6 --in-diff problems
+          #   70 internal error
+          #
+          # 4 is the one that matters most here: it means no mutation ran, and
+          # under continue-on-error the shard would still upload an outcomes.json
+          # full of zeros and quietly drag the aggregate denominator down.
+          case "$RC" in
+            0|2) exit 0 ;;
+            4)   echo "::error::Baseline tests fail before any mutation (exit 4). Nothing was measured — fix the test suite first."; exit 1 ;;
+            3)   echo "::error::Mutation tests timed out (exit 3). Raise timeout_multiplier in .cargo/mutants.toml, or the mutant caused a genuine hang."; exit 1 ;;
+            *)   echo "::error::cargo-mutants failed with exit ${RC} — see the exit-code table in this step."; exit 1 ;;
+          esac
+
+      - name: Upload shard outcome
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: mutation-report
-          path: apps/daemon/mutants-out/
-          retention-days: 30
+          name: mutation-shard-${{ matrix.shard }}
+          # outcomes.json is what the summary reads. mutants-out is the --output
+          # directory; cargo-mutants creates mutants.out INSIDE it. The old
+          # kill-rate check tested `-f mutants-out/mutants.out`, which is that
+          # directory, so the test was always false.
+          path: |
+            apps/daemon/mutants-out/mutants.out/outcomes.json
+            apps/daemon/mutants-report-${{ matrix.shard }}.txt
+          if-no-files-found: error
+
+  summary:
+    name: Mutation kill rate
+    runs-on: ubuntu-latest
+    needs: [mutation-test]
+    if: always()
+    timeout-minutes: 10
+
+    steps:
+      - name: Download shard outcomes
+        uses: actions/download-artifact@v7
+        with:
+          pattern: mutation-shard-*
+          path: shards/
+
+      - name: Aggregate and enforce kill rate
+        run: |
+          set -euo pipefail
+
+          # Not merge-multiple: every shard's file is named outcomes.json, so
+          # flattening them into one directory would collapse twelve reports
+          # onto one. Each shard keeps its own subdirectory.
+          mapfile -t REPORTS < <(find shards -name outcomes.json -type f | sort)
+          echo "shard reports found: ${#REPORTS[@]}"
+
+          EXPECTED=12
+          if [ "${#REPORTS[@]}" -ne "$EXPECTED" ]; then
+            echo "::error::Expected ${EXPECTED} shard reports, found ${#REPORTS[@]}. A shard timed out or failed to upload; the kill rate below would be computed over a smaller mutant set than the gate claims to cover."
+            exit 1
+          fi
+
+          python3 - "${REPORTS[@]}" <<'PY' | tee summary.txt
+          import json, sys, os
+
+          total = caught = missed = timeout = unviable = 0
+          for path in sys.argv[1:]:
+              with open(path) as f:
+                  d = json.load(f)
+              total    += d.get("total_mutants", 0)
+              caught   += d.get("caught", 0)
+              missed   += d.get("missed", 0)
+              timeout  += d.get("timeout", 0)
+              unviable += d.get("unviable", 0)
+
+          # Unviable mutants do not compile, so no test could ever catch one.
+          # Counting them in the denominator measures the mutation engine, not
+          # the test suite. The target stays 80%; only the denominator is the
+          # honest one.
+          viable = total - unviable
+          print(f"total mutants : {total}")
+          print(f"  caught      : {caught}")
+          print(f"  missed      : {missed}")
+          print(f"  timeout     : {timeout}")
+          print(f"  unviable    : {unviable} (excluded from the denominator)")
+
+          if viable == 0:
+              print("::error::No viable mutants across 12 shards — the run produced nothing to measure.")
+              sys.exit(1)
+
+          rate = caught / viable * 100
+          print(f"kill rate     : {caught}/{viable} = {rate:.1f}%")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a") as fh:
+                  fh.write("## Mutation kill rate\n\n")
+                  fh.write(f"**{caught}/{viable} = {rate:.1f}%** (target 80%)\n\n")
+                  fh.write("| | count |\n|---|---|\n")
+                  fh.write(f"| total mutants | {total} |\n| caught | {caught} |\n")
+                  fh.write(f"| missed | {missed} |\n| timed out | {timeout} |\n")
+                  fh.write(f"| unviable (not counted) | {unviable} |\n")
+
+          if rate < 80.0:
+              print(f"::error::Kill rate {rate:.1f}% is below the 80% target: {missed} mutants survived.")
+              sys.exit(1)
+          print("PASS: 80% target met")
+          PY
