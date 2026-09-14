@@ -13,13 +13,27 @@ name: Retrieval Eval Regression Gate
 on:
   push:
     paths:
-      - "nclaw/core/retrieval/**"
-      - "plugins-pro/paid/nself-ai-mcp/**"
+      # These were nclaw/core/retrieval/** and plugins-pro/paid/nself-ai-mcp/**:
+      # paths in OTHER repositories, left over from when this code lived in
+      # nclaw. Neither exists here, so the only live trigger was this workflow
+      # file itself and the gate never once ran because retrieval changed.
+      - "intelligence/internal/retrieval/**"
+      - "intelligence/cmd/mcp-server/**"
+      - "apps/daemon/src/mcp/**"
+      # The harness, its datasets and the baseline it compares against.
+      - "evaluation/**"
       - '.github/workflows/eval.yml'
   pull_request:
     paths:
-      - "nclaw/core/retrieval/**"
-      - "plugins-pro/paid/nself-ai-mcp/**"
+      # These were nclaw/core/retrieval/** and plugins-pro/paid/nself-ai-mcp/**:
+      # paths in OTHER repositories, left over from when this code lived in
+      # nclaw. Neither exists here, so the only live trigger was this workflow
+      # file itself and the gate never once ran because retrieval changed.
+      - "intelligence/internal/retrieval/**"
+      - "intelligence/cmd/mcp-server/**"
+      - "apps/daemon/src/mcp/**"
+      # The harness, its datasets and the baseline it compares against.
+      - "evaluation/**"
       - '.github/workflows/eval.yml'
   workflow_dispatch:
     inputs:
