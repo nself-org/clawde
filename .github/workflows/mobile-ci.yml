@@ -28,11 +28,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Falls back to GITHUB_TOKEN when the PAT is absent — see the longer note
+      # on the same step in ci.yml. nself-org/packages is public, and Dependabot
+      # runs never see repository secrets.
       - name: Checkout @nself packages (sibling workspace dep)
         uses: actions/checkout@v7
         with:
           repository: nself-org/packages
-          token: ${{ secrets.GH_PAT_CROSS_REPO }}
+          token: ${{ secrets.GH_PAT_CROSS_REPO || github.token }}
           path: _packages_checkout
 
       - name: Link packages to sibling path
