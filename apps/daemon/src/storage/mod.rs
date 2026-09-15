@@ -1148,3 +1148,8 @@ impl Storage {
         Ok(rows)
     }
 }
+
+// Kept in its own file: this module is already long, and the tests are a
+// self-contained block that does not need to be read alongside the queries.
+#[cfg(test)]
+mod tests;
