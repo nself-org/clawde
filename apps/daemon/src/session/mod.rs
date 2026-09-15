@@ -693,3 +693,8 @@ fn msg_row_to_view(row: crate::storage::MessageRow) -> MessageView {
         created_at: row.created_at,
     }
 }
+
+// Kept in its own file: mod.rs is already long, and the tests do not need to be
+// read alongside the manager implementation.
+#[cfg(test)]
+mod tests;
