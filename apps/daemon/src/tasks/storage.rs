@@ -938,3 +938,7 @@ fn uuid_v4_hex() -> u128 {
     OsRng.fill_bytes(&mut bytes);
     u128::from_le_bytes(bytes)
 }
+
+// Kept in its own file under storage/: the tests are a self-contained block.
+#[cfg(test)]
+mod tests;
