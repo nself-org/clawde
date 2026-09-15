@@ -392,3 +392,8 @@ fn epoch_ms() -> u64 {
         .unwrap_or(Duration::ZERO)
         .as_millis() as u64
 }
+
+// Kept in its own file under telemetry/: the tests are a self-contained block
+// and do not need to be read alongside the span builders.
+#[cfg(test)]
+mod tests;
