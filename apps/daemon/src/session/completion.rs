@@ -101,41 +101,7 @@ fn find_sentence_end(after: &str, offset: usize) -> Option<usize> {
     None
 }
 
+// Tests live in completion/tests.rs. Moved out when the suite grew to target
+// the mutation gate's surviving-mutant list for the sentence helpers.
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_confidence_colon_format() {
-        let msg = "The refactoring is complete. Confidence: 0.85 — all tests pass.";
-        let result = parse_confidence(msg).unwrap();
-        assert!((result.score - 0.85).abs() < 0.001);
-    }
-
-    #[test]
-    fn test_parse_confidence_my_format() {
-        let msg = "My confidence is 0.7 because there are untested edge cases.";
-        let result = parse_confidence(msg).unwrap();
-        assert!((result.score - 0.7).abs() < 0.001);
-    }
-
-    #[test]
-    fn test_no_confidence_marker() {
-        let msg = "Done. The file has been updated successfully.";
-        assert!(parse_confidence(msg).is_none());
-    }
-
-    #[test]
-    fn test_score_clamped_to_one() {
-        let msg = "Confidence: 1.5 — extremely confident.";
-        let result = parse_confidence(msg).unwrap();
-        assert!((result.score - 1.0).abs() < 0.001);
-    }
-
-    #[test]
-    fn test_reasoning_extracted() {
-        let msg = "All tests pass. Confidence: 0.9 — I verified every branch.";
-        let result = parse_confidence(msg).unwrap();
-        assert!(result.reasoning.contains("0.9"));
-    }
-}
+mod tests;
