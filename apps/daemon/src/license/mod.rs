@@ -414,7 +414,12 @@ mod tests {
             expected
         );
         assert_ne!(
-            compute_hmac(tier, features_json, "2026-03-01T00:00:01+00:00", valid_until),
+            compute_hmac(
+                tier,
+                features_json,
+                "2026-03-01T00:00:01+00:00",
+                valid_until
+            ),
             expected
         );
         assert_ne!(
@@ -431,7 +436,13 @@ mod tests {
         let valid_until = "2026-03-02T00:00:00+00:00";
         let hmac = compute_hmac(tier, features_json, cached_at, valid_until);
 
-        let valid = make_row(tier, features_json, cached_at, valid_until, Some(hmac.clone()));
+        let valid = make_row(
+            tier,
+            features_json,
+            cached_at,
+            valid_until,
+            Some(hmac.clone()),
+        );
         assert_eq!(verify_hmac(&valid), true);
 
         let missing_hmac = make_row(tier, features_json, cached_at, valid_until, None);
@@ -446,10 +457,22 @@ mod tests {
         );
         assert_eq!(verify_hmac(&wrong_hmac), false);
 
-        let changed_tier = make_row("free", features_json, cached_at, valid_until, Some(hmac.clone()));
+        let changed_tier = make_row(
+            "free",
+            features_json,
+            cached_at,
+            valid_until,
+            Some(hmac.clone()),
+        );
         assert_eq!(verify_hmac(&changed_tier), false);
 
-        let changed_features = make_row(tier, r#"{"relay":false}"#, cached_at, valid_until, Some(hmac.clone()));
+        let changed_features = make_row(
+            tier,
+            r#"{"relay":false}"#,
+            cached_at,
+            valid_until,
+            Some(hmac.clone()),
+        );
         assert_eq!(verify_hmac(&changed_features), false);
 
         let changed_cached_at = make_row(
