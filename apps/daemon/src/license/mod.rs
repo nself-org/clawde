@@ -298,13 +298,13 @@ mod tests {
         let info = LicenseInfo::free();
 
         assert_eq!(info.tier, "free");
-        assert_eq!(info.features.relay, false);
-        assert_eq!(info.features.auto_switch, false);
-        assert_eq!(info.features.clawde_plus, false);
+        assert!(!info.features.relay);
+        assert!(!info.features.auto_switch);
+        assert!(!info.features.clawde_plus);
         assert_eq!(info.grace_days_remaining, None);
-        assert_eq!(info.is_relay_enabled(), false);
-        assert_eq!(info.is_auto_switch_enabled(), false);
-        assert_eq!(info.is_clawde_plus(), false);
+        assert!(!info.is_relay_enabled());
+        assert!(!info.is_auto_switch_enabled());
+        assert!(!info.is_clawde_plus());
     }
 
     #[test]
@@ -314,27 +314,27 @@ mod tests {
             features: make_features(true, false, false),
             grace_days_remaining: Some(2),
         };
-        assert_eq!(relay_only.is_relay_enabled(), true);
-        assert_eq!(relay_only.is_auto_switch_enabled(), false);
-        assert_eq!(relay_only.is_clawde_plus(), false);
+        assert!(relay_only.is_relay_enabled());
+        assert!(!relay_only.is_auto_switch_enabled());
+        assert!(!relay_only.is_clawde_plus());
 
         let auto_switch_only = LicenseInfo {
             tier: "cloud_pro".to_string(),
             features: make_features(false, true, false),
             grace_days_remaining: None,
         };
-        assert_eq!(auto_switch_only.is_relay_enabled(), false);
-        assert_eq!(auto_switch_only.is_auto_switch_enabled(), true);
-        assert_eq!(auto_switch_only.is_clawde_plus(), false);
+        assert!(!auto_switch_only.is_relay_enabled());
+        assert!(auto_switch_only.is_auto_switch_enabled());
+        assert!(!auto_switch_only.is_clawde_plus());
 
         let clawde_plus_only = LicenseInfo {
             tier: "clawde_plus".to_string(),
             features: make_features(false, false, true),
             grace_days_remaining: None,
         };
-        assert_eq!(clawde_plus_only.is_relay_enabled(), false);
-        assert_eq!(clawde_plus_only.is_auto_switch_enabled(), false);
-        assert_eq!(clawde_plus_only.is_clawde_plus(), true);
+        assert!(!clawde_plus_only.is_relay_enabled());
+        assert!(!clawde_plus_only.is_auto_switch_enabled());
+        assert!(clawde_plus_only.is_clawde_plus());
     }
 
     #[test]
@@ -354,9 +354,9 @@ mod tests {
         let response: VerifyResponse = serde_json::from_value(body).unwrap();
 
         assert_eq!(response.tier, "cloud_pro");
-        assert_eq!(response.features.relay, true);
-        assert_eq!(response.features.auto_switch, true);
-        assert_eq!(response.features.clawde_plus, false);
+        assert!(response.features.relay);
+        assert!(response.features.auto_switch);
+        assert!(!response.features.clawde_plus);
         let grace = response.grace_period.unwrap();
         assert_eq!(grace.days_remaining, 7);
     }
@@ -370,9 +370,9 @@ mod tests {
 
         let features: Features = serde_json::from_value(body).unwrap();
 
-        assert_eq!(features.relay, true);
-        assert_eq!(features.auto_switch, false);
-        assert_eq!(features.clawde_plus, false);
+        assert!(features.relay);
+        assert!(!features.auto_switch);
+        assert!(!features.clawde_plus);
     }
 
     #[test]
@@ -443,10 +443,10 @@ mod tests {
             valid_until,
             Some(hmac.clone()),
         );
-        assert_eq!(verify_hmac(&valid), true);
+        assert!(verify_hmac(&valid));
 
         let missing_hmac = make_row(tier, features_json, cached_at, valid_until, None);
-        assert_eq!(verify_hmac(&missing_hmac), false);
+        assert!(!verify_hmac(&missing_hmac));
 
         let wrong_hmac = make_row(
             tier,
@@ -455,7 +455,7 @@ mod tests {
             valid_until,
             Some(format!("0{}", &hmac[1..])),
         );
-        assert_eq!(verify_hmac(&wrong_hmac), false);
+        assert!(!verify_hmac(&wrong_hmac));
 
         let changed_tier = make_row(
             "free",
@@ -464,7 +464,7 @@ mod tests {
             valid_until,
             Some(hmac.clone()),
         );
-        assert_eq!(verify_hmac(&changed_tier), false);
+        assert!(!verify_hmac(&changed_tier));
 
         let changed_features = make_row(
             tier,
@@ -473,7 +473,7 @@ mod tests {
             valid_until,
             Some(hmac.clone()),
         );
-        assert_eq!(verify_hmac(&changed_features), false);
+        assert!(!verify_hmac(&changed_features));
 
         let changed_cached_at = make_row(
             tier,
@@ -482,7 +482,7 @@ mod tests {
             valid_until,
             Some(hmac.clone()),
         );
-        assert_eq!(verify_hmac(&changed_cached_at), false);
+        assert!(!verify_hmac(&changed_cached_at));
 
         let changed_valid_until = make_row(
             tier,
@@ -491,6 +491,6 @@ mod tests {
             "2026-03-02T00:00:01+00:00",
             Some(hmac),
         );
-        assert_eq!(verify_hmac(&changed_valid_until), false);
+        assert!(!verify_hmac(&changed_valid_until));
     }
 }
