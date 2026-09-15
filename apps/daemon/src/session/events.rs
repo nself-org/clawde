@@ -41,3 +41,8 @@ impl EventLog {
         Ok(())
     }
 }
+
+// Kept in its own file so the tests do not need to be read alongside the
+// implementation.
+#[cfg(test)]
+mod tests;

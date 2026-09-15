@@ -115,3 +115,8 @@ pub fn effective_repo_path(data_dir: &Path, session_id: &str, repo_path: &str) -
         repo_path.to_string()
     }
 }
+
+// Kept in its own file so the tests do not need to be read alongside the
+// implementation.
+#[cfg(test)]
+mod tests;
