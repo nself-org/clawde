@@ -669,3 +669,8 @@ fn default_data_dir() -> PathBuf {
     // Fallback
     PathBuf::from(".clawd")
 }
+
+// Kept in its own file so the tests do not need to be read alongside the
+// config structs.
+#[cfg(test)]
+mod tests;
