@@ -120,43 +120,6 @@ fn check_string(_tool: &str, s: &str, path: &str) -> Result<(), PolicyViolation>
     Ok(())
 }
 
+// Tests live in tests.rs.
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn clean_args_pass() {
-        let args = json!({ "path": "src/main.rs", "content": "fn main() {}" });
-        assert!(check_tool_args("read_file", &args).is_ok());
-    }
-
-    #[test]
-    fn openai_key_in_args_blocked() {
-        let args = json!({ "key": "sk-abcdefghijklmnopqrstuvwxyz1234567890" });
-        let result = check_tool_args("apply_patch", &args);
-        assert!(result.is_err());
-        assert!(matches!(
-            result,
-            Err(PolicyViolation::SecretDetected { .. })
-        ));
-    }
-
-    #[test]
-    fn nested_secret_blocked() {
-        let args = json!({
-            "config": {
-                "api_key": "sk-abcdefghijklmnopqrstuvwxyz1234567890"
-            }
-        });
-        let result = check_tool_args("apply_patch", &args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn aws_key_blocked() {
-        let args = json!({ "credentials": "AKIAIOSFODNN7EXAMPLE1234" });
-        let result = check_tool_args("run_tests", &args);
-        assert!(result.is_err());
-    }
-}
+mod tests;
