@@ -25,6 +25,7 @@
 //! via the `CURSOR_TOKEN` env var when spawning the subprocess.
 
 use super::runner::Runner;
+use super::stream_guards::{is_rate_limit_notice, would_exceed_cap};
 use crate::{ipc::event::EventBroadcaster, storage::Storage};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -167,12 +168,7 @@ impl CursorRunner {
             let mut lines = BufReader::new(stderr).lines();
             while let Ok(Some(line)) = lines.next_line().await {
                 debug!(target: "cursor_stderr", "{}", line);
-                let lower = line.to_ascii_lowercase();
-                if lower.contains("rate limit")
-                    || lower.contains("rate_limit")
-                    || lower.contains("too many requests")
-                    || lower.contains("429")
-                {
+                if is_rate_limit_notice(&line) {
                     broadcaster_err.broadcast(
                         "session.statusChanged",
                         json!({
@@ -236,7 +232,9 @@ impl CursorRunner {
             trace!(session = %self.session_id, line = %line, "cursor output");
 
             // Cap accumulated output at 1 MB.
-            if !truncated && accumulated.len() + line.len() + 1 > Self::MAX_ACCUMULATED_BYTES {
+            if !truncated
+                && would_exceed_cap(accumulated.len(), line.len(), Self::MAX_ACCUMULATED_BYTES)
+            {
                 warn!(
                     session = %self.session_id,
                     bytes = accumulated.len(),

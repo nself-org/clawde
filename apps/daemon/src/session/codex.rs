@@ -8,6 +8,7 @@
 //!   `codex --approval-mode full-auto -q "<content>"`
 
 use super::runner::Runner;
+use super::stream_guards::{is_rate_limit_notice, would_exceed_cap};
 use crate::{ipc::event::EventBroadcaster, storage::Storage};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -98,13 +99,7 @@ impl CodexRunner {
             let mut lines = BufReader::new(stderr).lines();
             while let Ok(Some(line)) = lines.next_line().await {
                 debug!(target: "codex_stderr", "{}", line);
-                // Detect rate-limit patterns: "rate limit", "too many requests", "429".
-                let lower = line.to_lowercase();
-                if lower.contains("rate limit")
-                    || lower.contains("rate_limit")
-                    || lower.contains("too many requests")
-                    || lower.contains("429")
-                {
+                if is_rate_limit_notice(&line) {
                     broadcaster_err.broadcast(
                         "session.statusChanged",
                         json!({
@@ -167,7 +162,9 @@ impl CodexRunner {
             trace!(session = %self.session_id, line = %line, "codex output");
 
             // Cap accumulated output at 1 MB to prevent OOM on runaway Codex output.
-            if !truncated && accumulated.len() + line.len() + 1 > Self::MAX_ACCUMULATED_BYTES {
+            if !truncated
+                && would_exceed_cap(accumulated.len(), line.len(), Self::MAX_ACCUMULATED_BYTES)
+            {
                 warn!(
                     session = %self.session_id,
                     bytes = accumulated.len(),

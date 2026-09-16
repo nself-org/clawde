@@ -5,6 +5,7 @@ pub mod cursor;
 pub mod events;
 pub mod router;
 pub mod runner;
+pub mod stream_guards;
 pub mod system_prompt;
 pub mod telemetry;
 pub mod worktree;
