@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Download shard outcomes
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: mutation-shard-*
           path: shards/
