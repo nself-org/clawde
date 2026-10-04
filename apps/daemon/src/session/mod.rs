@@ -699,3 +699,6 @@ fn msg_row_to_view(row: crate::storage::MessageRow) -> MessageView {
 // read alongside the manager implementation.
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod manager_tests;
