@@ -1153,3 +1153,6 @@ impl Storage {
 // self-contained block that does not need to be read alongside the queries.
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod setter_tests;
