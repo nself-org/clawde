@@ -4,6 +4,8 @@
 //! or stored in the event log.  Wraps `crate::evals::scanners::secrets` and
 //! `crate::telemetry::redact`.
 
+use serde_json::Value;
+
 use crate::evals::scanners::secrets as secret_scanner;
 use crate::telemetry::redact::redact_str;
 
@@ -66,6 +68,60 @@ pub fn scan_log_output(text: &str) -> String {
     redacted
 }
 
+/// Object keys (matched case-insensitively as substrings) whose string values
+/// are always replaced with `[REDACTED]`.
+const SENSITIVE_KEYS: &[&str] = &[
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "api_key",
+    "apikey",
+    "access_key",
+    "private_key",
+    "authorization",
+    "credential",
+];
+
+/// Recursively redact secrets in a JSON value, keeping its shape.
+///
+/// - A string under an object key matching [`SENSITIVE_KEYS`] becomes `"[REDACTED]"`.
+/// - A string leaf containing `PRIVATE KEY-----` is replaced whole with
+///   `"[REDACTED: private key]"`.
+/// - Every other string leaf goes through [`scan_log_output`].
+///
+/// Unlike scanning `value.to_string()`, this sees the real string contents, not
+/// their JSON-escaped form, so `{"password":"..."}` and multi-line key bodies
+/// are caught.
+pub fn redact_value(v: Value) -> Value {
+    match v {
+        Value::String(s) => Value::String(redact_leaf(&s)),
+        Value::Array(items) => Value::Array(items.into_iter().map(redact_value).collect()),
+        Value::Object(map) => Value::Object(
+            map.into_iter()
+                .map(|(k, val)| {
+                    let lower = k.to_lowercase();
+                    let sensitive = SENSITIVE_KEYS.iter().any(|s| lower.contains(s));
+                    let val = match val {
+                        Value::String(_) if sensitive => Value::String("[REDACTED]".into()),
+                        other => redact_value(other),
+                    };
+                    (k, val)
+                })
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+fn redact_leaf(s: &str) -> String {
+    if s.contains("PRIVATE KEY-----") {
+        "[REDACTED: private key]".to_string()
+    } else {
+        scan_log_output(s)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,5 +171,35 @@ mod tests {
 
         let safe = UntrustedContentLabel::trusted("safe output");
         assert!(!safe.from_untrusted);
+    }
+
+    #[test]
+    fn redact_value_sensitive_key_any_case() {
+        let out = redact_value(serde_json::json!({"Password": "hunter2hunter2", "n": 5}));
+        assert_eq!(out["Password"], "[REDACTED]");
+        assert_eq!(out["n"], 5);
+    }
+
+    #[test]
+    fn redact_value_escaped_assignment_in_leaf() {
+        let out = redact_value(serde_json::json!({"note": "password=\"abcdefgh1234\""}));
+        assert!(!out.to_string().contains("abcdefgh1234"));
+    }
+
+    #[test]
+    fn redact_value_private_key_body() {
+        let pem = "-----BEGIN PRIVATE KEY-----\nMIIEFAKEBODY\n-----END PRIVATE KEY-----";
+        let out = redact_value(serde_json::json!({"log": pem}));
+        assert_eq!(out["log"], "[REDACTED: private key]");
+    }
+
+    #[test]
+    fn redact_value_nested_and_clean_untouched() {
+        let key = format!("sk-{}", "FAKE".repeat(9));
+        let v = serde_json::json!({"a": [{"b": format!("x {key}")}], "ok": "hello", "t": true});
+        let out = redact_value(v);
+        assert!(!out.to_string().contains(&key));
+        assert_eq!(out["ok"], "hello");
+        assert_eq!(out["t"], true);
     }
 }

@@ -41,6 +41,7 @@ pub use transport::{
     McpError, McpMessage, McpProgressNotification, McpResponse, McpTransport, McpTransportHandler,
     MCP_INTERNAL_ERROR, MCP_INVALID_PARAMS, MCP_INVALID_REQUEST, MCP_METHOD_NOT_FOUND,
     MCP_PARSE_ERROR, MCP_POLICY_DENIED, MCP_PROVIDER_NOT_AVAILABLE, MCP_SUPPLY_CHAIN_DENIED,
+    MCP_UNKNOWN_ENTITY,
 };
 
 pub use tools::{clawd_tools, handle_tools_list, McpToolDef};

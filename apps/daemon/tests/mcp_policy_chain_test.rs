@@ -26,6 +26,7 @@ use clawd::{
     session::SessionManager,
     storage::Storage,
     tasks::reducer::TaskState,
+    tasks::storage::ActivityQueryParams,
     tasks::TaskStorage,
     telemetry, update,
     worktree::WorktreeManager,
@@ -121,7 +122,7 @@ async fn allowed_call_reaches_handler() {
 async fn untrusted_caller_never_reaches_handler() {
     let g = gate(false, true);
     let (res, calls) = run(&g, TRUSTED, "log_event", json!({}), Ok(None), json!({})).await;
-    assert!(err_text(&res).starts_with("MCP_POLICY_DENIED:"));
+    assert!(err_text(&res).starts_with("MCP_UNKNOWN_ENTITY:"));
     assert_eq!(calls, 0);
     let (res, calls) = run(
         &gate(true, true),
@@ -132,7 +133,7 @@ async fn untrusted_caller_never_reaches_handler() {
         json!({}),
     )
     .await;
-    assert!(err_text(&res).starts_with("MCP_POLICY_DENIED:"));
+    assert!(err_text(&res).starts_with("MCP_UNKNOWN_ENTITY:"));
     assert_eq!(calls, 0);
 }
 
@@ -231,6 +232,28 @@ async fn chain_error_denies() {
     .await;
     let msg = err_text(&res);
     assert!(msg.contains("MCP_POLICY_DENIED") && msg.contains("chain"));
+    assert!(
+        !msg.contains("db down"),
+        "real cause must not reach the caller"
+    );
+    assert_eq!(calls, 0);
+}
+
+#[tokio::test]
+async fn step_order_untrusted_beats_chain_error() {
+    let g = gate(false, true);
+    let (res, calls) = run(
+        &g,
+        TRUSTED,
+        "log_event",
+        json!({}),
+        Err(anyhow::anyhow!("db down")),
+        json!({}),
+    )
+    .await;
+    let msg = err_text(&res);
+    assert!(msg.starts_with("MCP_UNKNOWN_ENTITY:"), "{msg}");
+    assert!(!msg.contains("chain_error"));
     assert_eq!(calls, 0);
 }
 
@@ -238,12 +261,35 @@ async fn chain_error_denies() {
 async fn handler_output_is_redacted() {
     let g = gate(true, true);
     let secret = fake_secret();
-    let reply = json!({"note": format!("key {secret}")});
+    let pem = "-----BEGIN PRIVATE KEY-----\nMIIEFAKEBODYFAKEBODY\n-----END PRIVATE KEY-----";
+    let reply = json!({
+        "note": format!("key {secret}"),
+        "password": "hunter2hunter2",
+        "nested": [{"Authorization": "Bearer abcdefghijklmnopqrstuvwxyz"}],
+        "line": "password=\"abcdefgh1234\"",
+        "pem": pem,
+        "keep": "hello",
+        "count": 3
+    });
     let (res, calls) = run(&g, TRUSTED, "log_event", json!({}), Ok(None), reply).await;
     assert_eq!(calls, 1);
-    let out = res.unwrap().to_string();
-    assert!(!out.contains(&secret));
-    assert!(out.contains("REDACTED"));
+    let out = res.unwrap();
+    let text = out.to_string();
+    for leak in [
+        secret.as_str(),
+        "hunter2hunter2",
+        "abcdefgh1234",
+        "MIIEFAKEBODY",
+        "abcdefghijklmnopqrstuvwxyz",
+    ] {
+        assert!(!text.contains(leak), "leaked {leak}");
+    }
+    // Shape preserved, not wrapped.
+    assert_eq!(out["password"], "[REDACTED]");
+    assert_eq!(out["pem"], "[REDACTED: private key]");
+    assert_eq!(out["keep"], "hello");
+    assert_eq!(out["count"], 3);
+    assert!(out.get("redacted").is_none());
 }
 
 #[tokio::test]
@@ -259,12 +305,14 @@ async fn handler_errors_propagate_unchanged() {
 
 #[test]
 fn classify_error_maps_new_prefixes() {
-    let e = anyhow::anyhow!("MCP_POLICY_DENIED: unknown_caller: nope");
+    let e = anyhow::anyhow!("MCP_POLICY_DENIED: policy_denied: nope");
     let m = McpDispatcher::classify_error(&e);
     assert_eq!(
         (m.code, m.message.as_str()),
-        (-32003, "unknown_caller: nope")
+        (-32003, "policy_denied: nope")
     );
+    let e = anyhow::anyhow!("MCP_UNKNOWN_ENTITY: caller 'x' not trusted");
+    assert_eq!(McpDispatcher::classify_error(&e).code, -32002);
     let e = anyhow::anyhow!("MCP_SUPPLY_CHAIN_DENIED: bad");
     assert_eq!(McpDispatcher::classify_error(&e).code, -32004);
 }
@@ -346,16 +394,24 @@ async fn make_test_ctx(dir: &TempDir, port: u16) -> Arc<AppContext> {
     })
 }
 
+async fn add_task(ctx: &AppContext, id: &str) {
+    ctx.task_storage
+        .add_task(
+            id, "t", None, None, None, None, None, None, None, None, None, None, "/repo",
+        )
+        .await
+        .unwrap();
+}
+
+fn code(e: &anyhow::Error) -> i32 {
+    McpDispatcher::classify_error(e).code
+}
+
 #[tokio::test]
 async fn real_dispatcher_denies_untrusted_and_allows_trusted() {
     let dir = TempDir::new().unwrap();
     let ctx = make_test_ctx(&dir, 0).await;
-    ctx.task_storage
-        .add_task(
-            "T-1", "t", None, None, None, None, None, None, None, None, None, None, "/repo",
-        )
-        .await
-        .unwrap();
+    add_task(&ctx, "T-1").await;
     let args = json!({"task_id": "T-1", "event_type": "note", "data": {"k": "v"}});
 
     let denied = McpDispatcher::new(ctx.clone(), Arc::new(gate(false, true)), "evil".into());
@@ -363,19 +419,31 @@ async fn real_dispatcher_denies_untrusted_and_allows_trusted() {
         .dispatch("log_event", args.clone(), None)
         .await
         .unwrap_err();
-    assert_eq!(McpDispatcher::classify_error(&err).code, -32003);
+    assert_eq!(code(&err), -32002);
 
+    // Strict allow: the handler ran, returned Ok, and wrote its activity row.
     let ok = McpDispatcher::new(ctx.clone(), Arc::new(gate(true, true)), TRUSTED.into());
-    // Past the gate: the handler ran. (log_event's own INSERT currently trips a
-    // DB CHECK constraint, a pre-existing handler bug, so accept either result
-    // as long as it is not a gate denial.)
-    match ok.dispatch("log_event", args, Some("agent-1".into())).await {
-        Ok(out) => assert_eq!(out, json!({"logged": true})),
-        Err(e) => {
-            let m = e.to_string();
-            assert!(!m.starts_with("MCP_POLICY_DENIED") && !m.starts_with("MCP_SUPPLY_CHAIN"));
-        }
-    }
+    let out = ok
+        .dispatch("log_event", args, Some("agent-1".into()))
+        .await
+        .unwrap();
+    assert_eq!(out, json!({"logged": true}));
+    let rows = ctx
+        .task_storage
+        .query_activity(&ActivityQueryParams {
+            repo_path: None,
+            task_id: Some("T-1".into()),
+            agent: None,
+            phase: None,
+            entry_type: None,
+            action: Some("note".into()),
+            since: None,
+            limit: None,
+            offset: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), 1);
 
     // Trusted but unregistered server: denied before the handler.
     let unreg = McpDispatcher::new(ctx, Arc::new(gate(true, false)), TRUSTED.into());
@@ -387,5 +455,52 @@ async fn real_dispatcher_denies_untrusted_and_allows_trusted() {
         )
         .await
         .unwrap_err();
-    assert_eq!(McpDispatcher::classify_error(&err).code, -32004);
+    assert_eq!(code(&err), -32004);
+}
+
+#[tokio::test]
+async fn real_dispatcher_resolves_task_state_from_storage() {
+    let dir = TempDir::new().unwrap();
+    let ctx = make_test_ctx(&dir, 0).await;
+    add_task(&ctx, "T-2").await; // status "pending"
+    let d = McpDispatcher::new(ctx, Arc::new(gate(true, true)), TRUSTED.into());
+    // Pending task: the engine denies (-32003), not verify_active_claimed (-32002).
+    let err = d
+        .dispatch(
+            "run_tests",
+            json!({"task_id": "T-2", "idempotency_key": "k"}),
+            Some("agent-1".into()),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(code(&err), -32003, "{err}");
+}
+
+#[tokio::test]
+async fn real_dispatcher_write_tool_requires_agent_identity() {
+    let dir = TempDir::new().unwrap();
+    let ctx = make_test_ctx(&dir, 0).await;
+    add_task(&ctx, "T-3").await;
+    ctx.task_storage
+        .claim_task("T-3", "agent-1", None)
+        .await
+        .unwrap();
+    let d = McpDispatcher::new(ctx, Arc::new(gate(true, true)), TRUSTED.into());
+    let args = json!({"task_id": "T-3", "idempotency_key": "k"});
+
+    // Task is Active, so the chain passes; with no agent id the handler is not reached.
+    let err = d
+        .dispatch("run_tests", args.clone(), None)
+        .await
+        .unwrap_err();
+    assert_eq!(code(&err), -32003, "{err}");
+    assert!(err.to_string().contains("agent identity required"));
+
+    // Control: a different agent passes the identity check and is stopped later
+    // by the ownership check (-32002), proving the first denial was the identity rule.
+    let err = d
+        .dispatch("run_tests", args, Some("other-agent".into()))
+        .await
+        .unwrap_err();
+    assert_eq!(code(&err), -32002, "{err}");
 }

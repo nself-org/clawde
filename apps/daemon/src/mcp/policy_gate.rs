@@ -13,17 +13,23 @@
 //! 7. handler runs, then `PolicyHooks::post_tool` redaction of the output
 //!
 //! Denials are returned as `anyhow` errors carrying `MCP_POLICY_DENIED:` or
-//! `MCP_SUPPLY_CHAIN_DENIED:` prefixes, which `McpDispatcher::classify_error`
-//! maps to wire codes. Arguments are never logged.
+//! `MCP_SUPPLY_CHAIN_DENIED:` prefixes (unknown caller: `MCP_UNKNOWN_ENTITY:`),
+//! which `McpDispatcher::classify_error` maps to wire codes. Arguments are
+//! never logged.
+//!
+//! **Caller identity.** The `caller` passed to the gate is the client identity
+//! established by ADR-004 transport auth (bearer token or peer credentials).
+//! It must never be the self-reported `clientInfo.name` from `initialize`.
 
 use std::fmt;
 use std::future::Future;
 use std::sync::Arc;
 
-use serde_json::{json, Value};
+use serde_json::Value;
 use tracing::warn;
 
 use crate::policy::hooks::PolicyHooks;
+use crate::policy::output_scan::redact_value;
 use crate::policy::{PolicyDecision, PolicyEngine};
 use crate::tasks::reducer::TaskState;
 
@@ -86,6 +92,7 @@ impl fmt::Display for GateDenial {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::SupplyChain(d) => write!(f, "MCP_SUPPLY_CHAIN_DENIED: {d}"),
+            Self::UnknownCaller(d) => write!(f, "MCP_UNKNOWN_ENTITY: {d}"),
             other => write!(f, "MCP_POLICY_DENIED: {}: {}", other.kind(), other.detail()),
         }
     }
@@ -126,8 +133,11 @@ impl PolicyGate {
                 "caller '{caller}' not trusted for tool '{tool}'"
             )));
         }
-        let state = task_state
-            .map_err(|e| GateDenial::ChainError(format!("task state lookup failed: {e}")))?;
+        let state = task_state.map_err(|e| {
+            // Real cause stays server-side; the caller gets fixed text.
+            warn!(tool, error = %e, "MCP policy chain: task state lookup failed");
+            GateDenial::ChainError("task state lookup failed".into())
+        })?;
 
         match self
             .engine
@@ -178,25 +188,15 @@ impl PolicyGate {
             );
             return Err(denial.into_error());
         }
-        let task_id = args
-            .get("task_id")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string();
         let result = handler(args).await?;
-        Ok(redact_output(tool, result, &task_id))
+        Ok(redact_output(result))
     }
 }
 
-/// Redact secrets from a tool result using `PolicyHooks::post_tool`.
-///
-/// Returns the redacted value (parsed back to JSON when possible, otherwise
-/// wrapped as `{"redacted": "<text>"}`), or `result` unchanged when clean.
-pub fn redact_output(tool: &str, result: Value, task_id: &str) -> Value {
-    match PolicyHooks::post_tool(tool, &result, task_id).redacted_display {
-        Some(s) => serde_json::from_str(&s).unwrap_or_else(|_| json!({ "redacted": s })),
-        None => result,
-    }
+/// Redact secrets from a tool result by walking the JSON value (see
+/// [`redact_value`]). The result keeps its shape.
+pub fn redact_output(result: Value) -> Value {
+    redact_value(result)
 }
 
 /// Map a task storage status string to a reducer `TaskState`.

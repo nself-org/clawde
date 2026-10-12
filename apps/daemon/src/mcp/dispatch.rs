@@ -6,18 +6,22 @@
 //! (trust, policy evaluate, supply chain, pre-tool hook) and its output is
 //! redacted afterwards. Write tools (apply_patch, run_tests) additionally
 //! verify that the referenced task is Active+Claimed. One dispatcher serves
-//! one MCP connection; `client_name` is the `clientInfo.name` from the
-//! `initialize` handshake and is the trust key.
+//! one MCP connection; `client_id` is the client identity established by
+//! ADR-004 transport auth (bearer token or peer credentials) and is the trust
+//! key. It must NEVER be the self-reported `clientInfo.name`.
+//!
+//! **Not wired yet.** Do not connect this dispatcher to a server loop until
+//! ADR-004 auth, the step-5 sandbox and the audit rows exist.
 use crate::AppContext;
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::{info, warn};
 
-use super::policy_gate::{task_state_from_status, PolicyGate};
+use super::policy_gate::{task_state_from_status, GateDenial, PolicyGate};
 use super::tools as tool_list;
 use super::transport::{
     McpError, MCP_INVALID_PARAMS, MCP_POLICY_DENIED, MCP_PROVIDER_NOT_AVAILABLE,
-    MCP_SUPPLY_CHAIN_DENIED,
+    MCP_SUPPLY_CHAIN_DENIED, MCP_UNKNOWN_ENTITY,
 };
 use crate::tasks::reducer::TaskState;
 
@@ -30,17 +34,18 @@ const WRITE_TOOLS: &[&str] = &["apply_patch", "run_tests", "transition_task", "c
 pub struct McpDispatcher {
     ctx: Arc<AppContext>,
     gate: Arc<PolicyGate>,
-    client_name: String,
+    client_id: String,
 }
 
 impl McpDispatcher {
-    /// Build a dispatcher for one connection. `client_name` is the MCP
-    /// `clientInfo.name` and is checked against the trust registry.
-    pub fn new(ctx: Arc<AppContext>, gate: Arc<PolicyGate>, client_name: String) -> Self {
+    /// Build a dispatcher for one connection. `client_id` is the identity
+    /// established by ADR-004 transport auth (never the self-reported
+    /// `clientInfo.name`) and is checked against the trust registry.
+    pub fn new(ctx: Arc<AppContext>, gate: Arc<PolicyGate>, client_id: String) -> Self {
         Self {
             ctx,
             gate,
-            client_name,
+            client_id,
         }
     }
 
@@ -75,7 +80,7 @@ impl McpDispatcher {
         let result = self
             .gate
             .guard(
-                &self.client_name,
+                &self.client_id,
                 tool_name,
                 arguments,
                 agent_id.as_deref().unwrap_or(""),
@@ -83,6 +88,12 @@ impl McpDispatcher {
                 |args| async move {
                     // For write tools, verify the task is Active+Claimed.
                     if WRITE_TOOLS.contains(&tool_name) {
+                        if aid.is_none() {
+                            return Err(GateDenial::PolicyDenied(
+                                "agent identity required for write tools".into(),
+                            )
+                            .into_error());
+                        }
                         self.verify_active_claimed(&args, aid.as_deref()).await?;
                     }
                     self.route(tool_name, args, aid.as_deref()).await
@@ -191,6 +202,9 @@ impl McpDispatcher {
         if msg.starts_with("MCP_INVALID_PARAMS:") {
             let detail = msg.trim_start_matches("MCP_INVALID_PARAMS:").trim();
             McpError::new(MCP_INVALID_PARAMS, detail)
+        } else if msg.starts_with("MCP_UNKNOWN_ENTITY:") {
+            let detail = msg.trim_start_matches("MCP_UNKNOWN_ENTITY:").trim();
+            McpError::new(MCP_UNKNOWN_ENTITY, detail)
         } else if msg.starts_with("MCP_POLICY_DENIED:") {
             let detail = msg.trim_start_matches("MCP_POLICY_DENIED:").trim();
             McpError::new(MCP_POLICY_DENIED, detail)
