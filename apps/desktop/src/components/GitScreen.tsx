@@ -48,6 +48,8 @@ export function GitScreen() {
     }
   };
 
+  // loadGit reads only activeProjectPath, so that is the real dependency.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadGit(); }, [activeProjectPath]);
 
   return (

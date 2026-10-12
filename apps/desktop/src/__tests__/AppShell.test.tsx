@@ -7,6 +7,7 @@
  */
 
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import { initializeI18next } from "@nself/i18n";
 import { useAppStore } from "@/stores/appStore";
 import { useConversationStore } from "@/stores/conversationStore";
 
@@ -30,6 +31,12 @@ const tauriApi = require("@/lib/tauriApi") as {
   daemonStatus: jest.Mock;
   healthCheck: jest.Mock;
 };
+
+// main.tsx initialises i18n before the first render; do the same here so the
+// nav titles resolve to English strings instead of raw translation keys.
+beforeAll(() => {
+  initializeI18next("en");
+});
 
 // Reset stores and mocks between tests
 beforeEach(() => {

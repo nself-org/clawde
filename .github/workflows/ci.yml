@@ -91,7 +91,10 @@ jobs:
 
       - name: Test
         working-directory: apps/desktop
-        run: pnpm test -- --passWithNoTests
+        # No extra `-- --passWithNoTests`: the script already passes it, and the
+        # forwarded copy became a jest path filter that matched no test file, so
+        # the suite never ran.
+        run: pnpm test
 
   # ─── Rust daemon ──────────────────────────────────────────────────
   rust:

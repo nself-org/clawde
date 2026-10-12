@@ -110,7 +110,9 @@ function SessionSidebar({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
       const session = await createSession(projectPath);
       setSessions([session, ...sessions]);
       setActiveSession(session);
-    } catch {}
+    } catch {
+      // Creation failed: keep the current session list unchanged.
+    }
   };
 
   if (!isOpen) {

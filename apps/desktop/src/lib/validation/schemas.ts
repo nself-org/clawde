@@ -66,7 +66,7 @@ export const serverModeSchema = z.object({
     .min(1, 'Host cannot be empty')
     .refine(
       (v) =>
-        /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/.test(v) ||
+        /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(v) ||
         /^(\d{1,3}\.){3}\d{1,3}$/.test(v),
       'Host must be a valid hostname or IP address'
     ),
