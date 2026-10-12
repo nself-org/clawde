@@ -29,7 +29,7 @@ use serde_json::Value;
 use tracing::warn;
 
 use crate::policy::hooks::PolicyHooks;
-use crate::policy::output_scan::redact_value;
+use crate::policy::output_scan::scan_log_output;
 use crate::policy::{PolicyDecision, PolicyEngine};
 use crate::tasks::reducer::TaskState;
 
@@ -165,7 +165,8 @@ impl PolicyGate {
     }
 
     /// Check the chain, call `handler(args)` only if every step passed, then
-    /// redact the output. Handler errors propagate unchanged.
+    /// redact the output. Handler errors are passed through the same secret
+    /// redaction; their MCP code prefix is kept.
     pub async fn guard<F, Fut>(
         &self,
         caller: &str,
@@ -188,15 +189,26 @@ impl PolicyGate {
             );
             return Err(denial.into_error());
         }
-        let result = handler(args).await?;
-        Ok(redact_output(result))
+        let task_id = args
+            .get("task_id")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        match handler(args).await {
+            Ok(result) => Ok(redact_output(tool, result, &task_id)),
+            Err(e) => Err(anyhow::anyhow!("{}", scan_log_output(&e.to_string()))),
+        }
     }
 }
 
-/// Redact secrets from a tool result by walking the JSON value (see
-/// [`redact_value`]). The result keeps its shape.
-pub fn redact_output(result: Value) -> Value {
-    redact_value(result)
+/// Redact a tool result through [`PolicyHooks::post_tool`], the single
+/// post-tool entry point. Returns the redacted value (same shape) when
+/// redaction changed something, otherwise `result` unchanged.
+pub fn redact_output(tool: &str, result: Value, task_id: &str) -> Value {
+    match PolicyHooks::post_tool(tool, &result, task_id).redacted {
+        Some(v) => v,
+        None => result,
+    }
 }
 
 /// Map a task storage status string to a reducer `TaskState`.

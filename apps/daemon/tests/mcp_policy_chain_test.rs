@@ -303,6 +303,27 @@ async fn handler_errors_propagate_unchanged() {
     assert_eq!(err_text(&res), "MCP_INVALID_PARAMS: boom");
 }
 
+#[tokio::test]
+async fn handler_errors_are_redacted_and_keep_code() {
+    let g = gate(true, true);
+    let secret = fake_secret();
+    let res = g
+        .guard(
+            TRUSTED,
+            "log_event",
+            json!({}),
+            "a",
+            Ok(None),
+            |_a| async move {
+                Err::<Value, _>(anyhow::anyhow!("MCP_INVALID_PARAMS: bad value {secret}"))
+            },
+        )
+        .await;
+    let e = res.unwrap_err();
+    assert!(!e.to_string().contains(&fake_secret()));
+    assert_eq!(McpDispatcher::classify_error(&e).code, -32602);
+}
+
 #[test]
 fn classify_error_maps_new_prefixes() {
     let e = anyhow::anyhow!("MCP_POLICY_DENIED: policy_denied: nope");
