@@ -17,7 +17,8 @@
 //! |--------|------|
 //! | `transport` | JSON-RPC wire types, lifecycle handlers, progress notifications |
 //! | `tools` | `tools/list` response — the 7 ClawDE tool definitions |
-//! | `dispatch` | `tools/call` dispatcher — routes to `tools::task` / `tools::patch` |
+//! | `dispatch` | `tools/call` dispatcher — runs the policy gate, then routes to `tools::task` / `tools::patch` |
+//! | `policy_gate` | ADR-003 chain (trust, evaluate, supply chain, pre-tool, redaction) in front of every handler |
 //! | `capabilities` | Capability negotiation during `initialize` handshake |
 //! | `config` | `.claw/mcp-servers.json` loader |
 //! | `client` | Upstream MCP client (stdio subprocess) |
@@ -28,6 +29,7 @@ pub mod capabilities;
 pub mod client;
 pub mod config;
 pub mod dispatch;
+pub mod policy_gate;
 pub mod resources;
 pub mod tools;
 pub mod transport;
@@ -38,12 +40,15 @@ pub use transport::{
     handle_initialize, handle_initialized, handle_ping, send_progress, McpCancelledNotification,
     McpError, McpMessage, McpProgressNotification, McpResponse, McpTransport, McpTransportHandler,
     MCP_INTERNAL_ERROR, MCP_INVALID_PARAMS, MCP_INVALID_REQUEST, MCP_METHOD_NOT_FOUND,
-    MCP_PARSE_ERROR, MCP_PROVIDER_NOT_AVAILABLE,
+    MCP_PARSE_ERROR, MCP_POLICY_DENIED, MCP_PROVIDER_NOT_AVAILABLE, MCP_SUPPLY_CHAIN_DENIED,
+    MCP_UNKNOWN_ENTITY,
 };
 
 pub use tools::{clawd_tools, handle_tools_list, McpToolDef};
 
 pub use dispatch::McpDispatcher;
+
+pub use policy_gate::{GateDenial, PolicyGate, ServerIdentity};
 
 pub use client::{McpClient, McpServerConfig, McpTrustLevel};
 

@@ -181,7 +181,7 @@ pub async fn log_event(ctx: &AppContext, args: Value, agent_id: Option<&str>) ->
             Some(task_id),
             task.phase.as_deref(),
             event_type,
-            "event",
+            "system",
             None,
             meta_str.as_deref(),
             &task.repo_path,

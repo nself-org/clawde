@@ -8,7 +8,7 @@
 
 use crate::tasks::reducer::TaskState;
 
-use super::output_scan::{scan_log_output, scan_patch_output};
+use super::output_scan::redact_value;
 use super::sandbox::PolicyViolation;
 use super::secrets::check_tool_args;
 
@@ -24,6 +24,9 @@ pub struct PostToolActions {
     /// If secrets were found in the result, this field contains the redacted
     /// version for display.  `None` means the result is safe to display as-is.
     pub redacted_display: Option<String>,
+    /// The redacted result value, keeping the original shape. `Some` only when
+    /// redaction changed something; callers return it instead of the original.
+    pub redacted: Option<serde_json::Value>,
 }
 
 // ─── Policy hooks ─────────────────────────────────────────────────────────────
@@ -64,17 +67,9 @@ impl PolicyHooks {
     pub fn post_tool(tool: &str, result: &serde_json::Value, _task_id: &str) -> PostToolActions {
         let mut actions = PostToolActions::default();
 
-        // For patch tools, scan the result diff for secrets.
+        // Patch tool: suggest running the formatter and linter after. Secret
+        // redaction (including patch text) is done by `redact_value` below.
         if tool == "apply_patch" {
-            if let Some(patch_str) = result.get("patch").and_then(|v| v.as_str()) {
-                let violations = scan_patch_output(patch_str);
-                if !violations.is_empty() {
-                    // Redact the patch for display.
-                    actions.redacted_display = Some(scan_log_output(patch_str));
-                }
-            }
-
-            // Patch tool: suggest running the formatter and linter after.
             actions.run_formatter = true;
             actions.run_linter = true;
         }
@@ -84,11 +79,11 @@ impl PolicyHooks {
             actions.run_linter = true;
         }
 
-        // General: redact the full result string for display.
-        let result_str = result.to_string();
-        let redacted = scan_log_output(&result_str);
-        if redacted != result_str {
-            actions.redacted_display = Some(redacted);
+        // Redact the result by walking the JSON value (not its serialized text).
+        let redacted = redact_value(result.clone());
+        if redacted != *result {
+            actions.redacted_display = Some(redacted.to_string());
+            actions.redacted = Some(redacted);
         }
 
         actions
@@ -179,6 +174,24 @@ mod tests {
         let actions = PolicyHooks::post_tool("run_tests", &result, "t1");
         assert!(actions.redacted_display.is_none());
         assert!(actions.run_linter);
+    }
+
+    #[test]
+    fn post_tool_clean_patch_not_redacted() {
+        let result = json!({ "applied": true, "patch": "+fn helper() {}" });
+        let actions = PolicyHooks::post_tool("apply_patch", &result, "t1");
+        assert!(actions.redacted.is_none());
+        assert!(actions.redacted_display.is_none());
+    }
+
+    #[test]
+    fn post_tool_sensitive_key_redacted() {
+        let result = json!({ "token": "abcd1234efgh", "ok": 1 });
+        let actions = PolicyHooks::post_tool("log_event", &result, "t1");
+        let red = actions.redacted.expect("redacted value");
+        assert_eq!(red["token"], "[REDACTED]");
+        assert_eq!(red["ok"], 1);
+        assert!(!actions.redacted_display.unwrap().contains("abcd1234efgh"));
     }
 
     #[test]

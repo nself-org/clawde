@@ -133,6 +133,33 @@ impl SupplyChainPolicy {
         Ok(())
     }
 
+    /// Read-only supply-chain check used on the tool-dispatch path.
+    ///
+    /// Unlike [`verify_or_register`](Self::verify_or_register) this never
+    /// registers a server, never updates timestamps and never writes to disk:
+    /// an unregistered server is denied, and a fingerprint mismatch is denied.
+    pub fn verify(
+        &self,
+        server_name: &str,
+        command: &str,
+        args: &[&str],
+    ) -> Result<(), PolicyViolation> {
+        let Some(existing) = self.servers.get(server_name) else {
+            return Err(PolicyViolation::UnregisteredServer {
+                server: server_name.to_string(),
+            });
+        };
+        let hash = Self::compute_command_hash(command, args);
+        if existing.binary_hash != hash {
+            return Err(PolicyViolation::SupplyChainMismatch {
+                server: server_name.to_string(),
+                expected_hash: existing.binary_hash.clone(),
+                actual_hash: hash,
+            });
+        }
+        Ok(())
+    }
+
     /// Compute a deterministic SHA-256 hash from `command` and `args`.
     ///
     /// Format: `SHA256(command + '\0' + args.join('\0'))` (hex).
@@ -215,5 +242,43 @@ mod tests {
         let h1 = SupplyChainPolicy::compute_command_hash("node", &["server.js"]);
         let h2 = SupplyChainPolicy::compute_command_hash("deno", &["server.js"]);
         assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn verify_registered_ok() {
+        let mut policy = SupplyChainPolicy::empty();
+        policy
+            .verify_or_register("my-mcp", "/usr/bin/node", &["server.js"])
+            .expect("register");
+        assert!(policy
+            .verify("my-mcp", "/usr/bin/node", &["server.js"])
+            .is_ok());
+    }
+
+    #[test]
+    fn verify_unregistered_denied_and_not_registered() {
+        let policy = SupplyChainPolicy::empty();
+        let result = policy.verify("ghost", "/usr/bin/node", &["server.js"]);
+        assert!(matches!(
+            result,
+            Err(PolicyViolation::UnregisteredServer { .. })
+        ));
+        // Read-only: a second call still denies.
+        assert!(policy
+            .verify("ghost", "/usr/bin/node", &["server.js"])
+            .is_err());
+    }
+
+    #[test]
+    fn verify_mismatch_denied() {
+        let mut policy = SupplyChainPolicy::empty();
+        policy
+            .verify_or_register("my-mcp", "/usr/bin/node", &["server.js"])
+            .expect("register");
+        let result = policy.verify("my-mcp", "/tmp/evil", &["server.js"]);
+        assert!(matches!(
+            result,
+            Err(PolicyViolation::SupplyChainMismatch { .. })
+        ));
     }
 }

@@ -120,6 +120,13 @@ pub const MCP_INVALID_PARAMS: i32 = -32602;
 pub const MCP_INTERNAL_ERROR: i32 = -32603;
 /// Maps to clawd providerNotAvailable — task not in Active+Claimed state.
 pub const MCP_PROVIDER_NOT_AVAILABLE: i32 = -32002;
+/// Unknown or untrusted caller (spec section 4, unknown_entity). Same value as
+/// [`MCP_PROVIDER_NOT_AVAILABLE`]; separate name so call sites say which they mean.
+pub const MCP_UNKNOWN_ENTITY: i32 = -32002;
+/// Tool call refused by the ADR-003 policy chain (trust, policy, pre-tool hook).
+pub const MCP_POLICY_DENIED: i32 = -32003;
+/// Tool call refused because the providing MCP server failed supply-chain checks.
+pub const MCP_SUPPLY_CHAIN_DENIED: i32 = -32004;
 
 // ─── Lifecycle params ─────────────────────────────────────────────────────────
 
