@@ -47,6 +47,10 @@ pub enum PolicyViolation {
         actual_hash: String,
     },
 
+    /// MCP server is not in the supply-chain allowlist (never registered).
+    #[error("supply-chain: server '{server}' is not registered in the allowlist")]
+    UnregisteredServer { server: String },
+
     /// Acceptance criteria are missing from the task spec.
     #[error("task has no acceptance criteria — cannot transition to CR")]
     NoAcceptanceCriteria,

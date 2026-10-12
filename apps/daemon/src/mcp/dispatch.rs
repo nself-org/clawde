@@ -1,29 +1,47 @@
-/// MCP `tools/call` dispatcher — routes tool invocations to internal handlers.
-///
-/// `McpDispatcher` holds a reference to `AppContext` and maps tool names to
-/// the handler functions in `mcp::tools::*`.  Write tools (apply_patch,
-/// run_tests) verify that the referenced task is Active+Claimed before
-/// proceeding; all other tools are callable in any task state.
+//! MCP `tools/call` dispatcher — routes tool invocations to internal handlers.
+//!
+//! `McpDispatcher` holds a reference to `AppContext` and maps tool names to
+//! the handler functions in `mcp::tools::*`. Every call first passes the
+//! ADR-003 policy chain in [`PolicyGate`](super::policy_gate::PolicyGate)
+//! (trust, policy evaluate, supply chain, pre-tool hook) and its output is
+//! redacted afterwards. Write tools (apply_patch, run_tests) additionally
+//! verify that the referenced task is Active+Claimed. One dispatcher serves
+//! one MCP connection; `client_name` is the `clientInfo.name` from the
+//! `initialize` handshake and is the trust key.
 use crate::AppContext;
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::{info, warn};
 
+use super::policy_gate::{task_state_from_status, PolicyGate};
 use super::tools as tool_list;
-use super::transport::{McpError, MCP_INVALID_PARAMS, MCP_PROVIDER_NOT_AVAILABLE};
+use super::transport::{
+    McpError, MCP_INVALID_PARAMS, MCP_POLICY_DENIED, MCP_PROVIDER_NOT_AVAILABLE,
+    MCP_SUPPLY_CHAIN_DENIED,
+};
+use crate::tasks::reducer::TaskState;
 
 /// Write tools that require the task to be Active+Claimed before proceeding.
 /// `transition_task` and `claim_task` are included so agents cannot advance
 /// task state or claim tasks without going through proper ownership checks.
 const WRITE_TOOLS: &[&str] = &["apply_patch", "run_tests", "transition_task", "claim_task"];
 
+/// Routes `tools/call` requests for one MCP connection through the policy gate.
 pub struct McpDispatcher {
     ctx: Arc<AppContext>,
+    gate: Arc<PolicyGate>,
+    client_name: String,
 }
 
 impl McpDispatcher {
-    pub fn new(ctx: Arc<AppContext>) -> Self {
-        Self { ctx }
+    /// Build a dispatcher for one connection. `client_name` is the MCP
+    /// `clientInfo.name` and is checked against the trust registry.
+    pub fn new(ctx: Arc<AppContext>, gate: Arc<PolicyGate>, client_name: String) -> Self {
+        Self {
+            ctx,
+            gate,
+            client_name,
+        }
     }
 
     /// Dispatch a `tools/call` invocation.
@@ -32,9 +50,10 @@ impl McpDispatcher {
     /// `arguments`  — the `arguments` object from the MCP `tools/call` params.
     /// `agent_id`   — optional agent identifier from the calling session.
     ///
-    /// Returns `Ok(Value)` with the tool result, or `Err(anyhow::Error)` whose
-    /// message encodes a MCP error code (e.g. `"MCP_INVALID_PARAMS: ..."` or
-    /// `"MCP_PROVIDER_NOT_AVAILABLE: ..."`) so callers can map it correctly.
+    /// Returns `Ok(Value)` with the (redacted) tool result, or
+    /// `Err(anyhow::Error)` whose message encodes a MCP error code (for example
+    /// `"MCP_INVALID_PARAMS: ..."`, `"MCP_POLICY_DENIED: ..."`) so callers can
+    /// map it with [`classify_error`](Self::classify_error).
     pub async fn dispatch(
         &self,
         tool_name: &str,
@@ -51,52 +70,69 @@ impl McpDispatcher {
             return Err(anyhow::anyhow!("MCP_INVALID_PARAMS: {}", msg));
         }
 
-        // For write tools, verify the task is Active+Claimed.
-        if WRITE_TOOLS.contains(&tool_name) {
-            self.verify_active_claimed(&arguments, agent_id.as_deref())
-                .await?;
-        }
+        let state = self.resolve_task_state(&arguments).await;
+        let aid = agent_id.clone();
+        let result = self
+            .gate
+            .guard(
+                &self.client_name,
+                tool_name,
+                arguments,
+                agent_id.as_deref().unwrap_or(""),
+                state,
+                |args| async move {
+                    // For write tools, verify the task is Active+Claimed.
+                    if WRITE_TOOLS.contains(&tool_name) {
+                        self.verify_active_claimed(&args, aid.as_deref()).await?;
+                    }
+                    self.route(tool_name, args, aid.as_deref()).await
+                },
+            )
+            .await?;
 
-        // Route to the correct handler.
-        let result = match tool_name {
-            "create_task" => super::tools::task::create_task(&self.ctx, arguments).await?,
-            "claim_task" => {
-                super::tools::task::claim_task(&self.ctx, arguments, agent_id.as_deref()).await?
-            }
-            "log_event" => {
-                super::tools::task::log_event(&self.ctx, arguments, agent_id.as_deref()).await?
-            }
-            "apply_patch" => {
-                super::tools::patch::apply_patch(&self.ctx, arguments, agent_id.as_deref()).await?
-            }
-            "run_tests" => {
-                super::tools::task::run_tests(&self.ctx, arguments, agent_id.as_deref()).await?
-            }
-            "request_approval" => {
-                super::tools::task::request_approval(&self.ctx, arguments, agent_id.as_deref())
-                    .await?
-            }
-            "transition_task" => {
-                super::tools::task::transition_task(&self.ctx, arguments, agent_id.as_deref())
-                    .await?
-            }
-            other => {
-                // Should not reach here — already checked above.
-                return Err(anyhow::anyhow!(
-                    "MCP_INVALID_PARAMS: unknown tool: {}",
-                    other
-                ));
-            }
-        };
-
-        // Emit an audit event (stub — log only; full audit pipeline TBD).
         info!(
             tool = tool_name,
             agent = agent_id.as_deref().unwrap_or("unknown"),
             "MCP tool executed"
         );
-
         Ok(result)
+    }
+
+    /// Look up the task named by `arguments.task_id` (if any) and map its
+    /// status to a `TaskState`. A storage error is passed on so the gate denies.
+    async fn resolve_task_state(&self, arguments: &Value) -> anyhow::Result<Option<TaskState>> {
+        let Some(id) = arguments.get("task_id").and_then(|v| v.as_str()) else {
+            return Ok(None);
+        };
+        Ok(self
+            .ctx
+            .task_storage
+            .get_task(id)
+            .await?
+            .and_then(|t| task_state_from_status(&t.status)))
+    }
+
+    /// Route to the correct handler.
+    async fn route(
+        &self,
+        tool_name: &str,
+        args: Value,
+        agent_id: Option<&str>,
+    ) -> anyhow::Result<Value> {
+        use super::tools::{patch, task};
+        match tool_name {
+            "create_task" => task::create_task(&self.ctx, args).await,
+            "claim_task" => task::claim_task(&self.ctx, args, agent_id).await,
+            "log_event" => task::log_event(&self.ctx, args, agent_id).await,
+            "apply_patch" => patch::apply_patch(&self.ctx, args, agent_id).await,
+            "run_tests" => task::run_tests(&self.ctx, args, agent_id).await,
+            "request_approval" => task::request_approval(&self.ctx, args, agent_id).await,
+            "transition_task" => task::transition_task(&self.ctx, args, agent_id).await,
+            other => Err(anyhow::anyhow!(
+                "MCP_INVALID_PARAMS: unknown tool: {}",
+                other
+            )),
+        }
     }
 
     /// Verify that the `task_id` in `arguments` corresponds to a task that is
@@ -155,6 +191,12 @@ impl McpDispatcher {
         if msg.starts_with("MCP_INVALID_PARAMS:") {
             let detail = msg.trim_start_matches("MCP_INVALID_PARAMS:").trim();
             McpError::new(MCP_INVALID_PARAMS, detail)
+        } else if msg.starts_with("MCP_POLICY_DENIED:") {
+            let detail = msg.trim_start_matches("MCP_POLICY_DENIED:").trim();
+            McpError::new(MCP_POLICY_DENIED, detail)
+        } else if msg.starts_with("MCP_SUPPLY_CHAIN_DENIED:") {
+            let detail = msg.trim_start_matches("MCP_SUPPLY_CHAIN_DENIED:").trim();
+            McpError::new(MCP_SUPPLY_CHAIN_DENIED, detail)
         } else if msg.starts_with("MCP_PROVIDER_NOT_AVAILABLE:") {
             let detail = msg.trim_start_matches("MCP_PROVIDER_NOT_AVAILABLE:").trim();
             McpError::new(MCP_PROVIDER_NOT_AVAILABLE, detail)
