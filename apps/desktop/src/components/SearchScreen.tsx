@@ -79,7 +79,7 @@ export function SearchScreen() {
 
       {query && results.length === 0 && (
         <div className="text-gray-600 text-sm text-center mt-16">
-          No results for "{query}"
+          No results for &quot;{query}&quot;
         </div>
       )}
 

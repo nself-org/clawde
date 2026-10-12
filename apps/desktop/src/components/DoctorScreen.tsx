@@ -100,6 +100,8 @@ export function DoctorScreen() {
     setLoading(false);
   };
 
+  // Run the checks once on mount; the Re-run button calls runChecks directly.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { runChecks(); }, []);
 
   const allOk = checks.length > 0 && checks.every((c) => c.ok);

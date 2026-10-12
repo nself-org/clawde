@@ -34,14 +34,18 @@ function loadPrefs(): AppPrefs {
   try {
     const raw = localStorage.getItem("clawde-prefs");
     if (raw) return JSON.parse(raw) as AppPrefs;
-  } catch {}
+  } catch {
+    // Storage unavailable or corrupt: fall back to the defaults below.
+  }
   return { theme: "dark", showTokenCount: false, autoScrollChat: true };
 }
 
 function savePrefsToStorage(prefs: AppPrefs) {
   try {
     localStorage.setItem("clawde-prefs", JSON.stringify(prefs));
-  } catch {}
+  } catch {
+    // Storage unavailable: prefs stay in memory for this session.
+  }
 }
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
