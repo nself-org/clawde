@@ -30,11 +30,13 @@ jobs:
 
       # Falls back to GITHUB_TOKEN when the PAT is absent — see the longer note
       # on the same step in ci.yml. nself-org/packages is public, and Dependabot
-      # runs never see repository secrets.
+      # runs never see repository secrets. The ref is pinned to the same SHA as
+      # ci.yml so the frozen install matches pnpm-lock.yaml; see the note there.
       - name: Checkout @nself packages (sibling workspace dep)
         uses: actions/checkout@v7
         with:
           repository: nself-org/packages
+          ref: e8d093016b1873bf47cf7d8873fd181ec66925d5
           token: ${{ secrets.GH_PAT_CROSS_REPO || github.token }}
           path: _packages_checkout
 

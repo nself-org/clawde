@@ -44,10 +44,18 @@ jobs:
       # not pass by construction, no matter how sound the bump was. It failed on
       # a premise that is no longer true (packages was private when that guard
       # was written).
+      #
+      # The ref is pinned because pnpm-lock.yaml records the manifests of every
+      # ../packages/@nself/* importer. Tracking packages' main meant any manifest
+      # change there (packages#30 moved @nself/errors to vitest 4) broke the
+      # frozen install here with ERR_PNPM_OUTDATED_LOCKFILE. To move it: bump the
+      # SHA here and in mobile-ci.yml, check packages out at that SHA beside this
+      # repo, run `pnpm install --lockfile-only`, and commit all three together.
       - name: Checkout @nself packages (sibling workspace dep)
         uses: actions/checkout@v7
         with:
           repository: nself-org/packages
+          ref: e8d093016b1873bf47cf7d8873fd181ec66925d5
           token: ${{ secrets.GH_PAT_CROSS_REPO || github.token }}
           path: _packages_checkout
 
