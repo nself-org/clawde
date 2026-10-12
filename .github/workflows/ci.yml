@@ -89,6 +89,10 @@ jobs:
         working-directory: apps/desktop
         run: pnpm run typecheck
 
+      - name: Lint
+        working-directory: apps/desktop
+        run: pnpm run lint
+
       - name: Test
         working-directory: apps/desktop
         # No extra `-- --passWithNoTests`: the script already passes it, and the
