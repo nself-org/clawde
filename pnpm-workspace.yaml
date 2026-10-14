@@ -32,9 +32,12 @@ overrides:
   'brace-expansion@5': '^5.0.11'
   'browserslist@<4.28.7': '^4.28.7'
   '@xmldom/xmldom': '>=0.9.12'
+  # Metro 0.83.8 removes image-size (GHSA-5p2g-fcmc-qvqq,
+  # GHSA-w3rx-r6r6-pgpr). Overriding image-size to 2.x breaks Metro 0.82's API.
+  'metro@<0.83.8': '0.83.8'
 auditConfig:
-  ignoreCves:
-    - CVE-2025-71330
-    - CVE-2025-71329
-    - CVE-2026-85393
-    - CVE-2026-93687
+  # Same existing exceptions, keyed by GHSA because registry records omit CVEs.
+  # Remove each when an upstream patched version is published.
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv # node-forge, CVE-2026-85393: no patched release
+    - GHSA-vfj7-8cjw-p6xm # braces, CVE-2026-93687: no patched release
