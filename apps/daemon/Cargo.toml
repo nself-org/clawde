@@ -56,9 +56,9 @@ log = "0.4"
 # OT.T01 — OpenTelemetry OTLP export (feature-gated: --features tracing)
 # Only active when OTEL_EXPORTER_OTLP_ENDPOINT is set at runtime.
 # Without the feature, spans are stored in SQLite only (zero external overhead).
-opentelemetry = { version = "0.27", optional = true }
-opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"], optional = true }
-opentelemetry-otlp = { version = "0.27", features = ["grpc-tonic"], optional = true }
+opentelemetry = { version = "0.32", optional = true }
+opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"], optional = true }
+opentelemetry-otlp = { version = "0.32", features = ["grpc-tonic"], optional = true }
 
 # TOML config file support
 toml = { version = "0.8", features = ["parse"] }
@@ -134,9 +134,9 @@ tower-http = { version = "0.6", features = ["cors"] }
 tokio-stream = "0.1"
 
 # Sprint II CH.1-CH.2 — Terminal chat + explain UI
-ratatui = "0.28"
+ratatui = "0.30"
 indicatif = "0.17"
-crossterm = "0.28"
+crossterm = "0.29"
 
 # Unix-only: process signals for pause (SIGSTOP) / resume (SIGCONT)
 [target.'cfg(unix)'.dependencies]
