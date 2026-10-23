@@ -9,7 +9,9 @@ overrides:
   uuid@<11.1.1: '>=11.1.1'
   vitest@<3.2.6: '>=3.2.6'
   esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
-  vite@<=6.4.2: '>=6.4.3'
+  vite@<=6.4.3: '>=6.4.4 <7'
+  storybook@<8.6.19: '>=8.6.19 <9'
+  '@storybook/core@<8.6.19': '>=8.6.19 <9'
   markdown-it@<14.3.1: ^14.3.1
   dompurify@<3.4.16: '>=3.4.16'
   immutable: '>=5.1.8'
@@ -77,7 +79,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/config:
     dependencies:
@@ -90,7 +92,7 @@ importers:
     devDependencies:
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/errors:
     devDependencies:
@@ -99,7 +101,7 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/graphql-client:
     dependencies:
@@ -136,7 +138,7 @@ importers:
         version: 2.14.6(@types/node@26.6.5)(typescript@6.0.3)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/i18n:
     dependencies:
@@ -161,7 +163,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/native-bridge:
     dependencies:
@@ -180,7 +182,7 @@ importers:
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.7)(graphql@16.14.2)(react-native@0.79.7(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.7))(react@19.2.7))
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/ntask-core:
     dependencies:
@@ -196,7 +198,7 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/observability:
     devDependencies:
@@ -226,7 +228,7 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/offline-queue:
     dependencies:
@@ -248,7 +250,7 @@ importers:
         version: 29.1.1
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/push-client:
     dependencies:
@@ -267,7 +269,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/sdk-core:
     dependencies:
@@ -280,7 +282,7 @@ importers:
         version: 22.19.21
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/tailwind-brand:
     dependencies:
@@ -299,7 +301,7 @@ importers:
         version: 8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/tauri-bridge:
     dependencies:
@@ -324,7 +326,7 @@ importers:
         version: 26.1.0
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/tsconfig: {}
 
@@ -332,7 +334,7 @@ importers:
     devDependencies:
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   ../packages/@nself/ui:
     dependencies:
@@ -354,16 +356,16 @@ importers:
         version: link:../observability
       '@storybook/addon-a11y':
         specifier: ^8
-        version: 8.6.18(storybook@8.6.18)
+        version: 8.6.18(storybook@8.6.19)
       '@storybook/addon-essentials':
         specifier: ^8
-        version: 8.6.14(@types/react@19.2.17)(storybook@8.6.18)
+        version: 8.6.14(@types/react@19.2.17)(storybook@8.6.19)
       '@storybook/react':
         specifier: ^8
-        version: 8.6.18(@storybook/test@8.6.18(storybook@8.6.18))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.18)(typescript@6.0.3)
+        version: 8.6.18(@storybook/test@8.6.18(storybook@8.6.19))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.19)(typescript@6.0.3)
       '@storybook/react-vite':
         specifier: ^8
-        version: 8.6.18(@storybook/test@8.6.18(storybook@8.6.18))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(rollup@4.62.0)(storybook@8.6.18)(typescript@6.0.3)(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 8.6.18(@storybook/test@8.6.18(storybook@8.6.19))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(rollup@4.62.0)(storybook@8.6.19)(typescript@6.0.3)(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@testing-library/jest-dom':
         specifier: ^6
         version: 6.9.1
@@ -381,7 +383,7 @@ importers:
         version: 19.2.3(@types/react@19.2.17)
       '@vitejs/plugin-react':
         specifier: ^4
-        version: 4.7.0(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.7.0(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       jsdom:
         specifier: ^25
         version: 25.0.1
@@ -392,8 +394,8 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
       storybook:
-        specifier: ^8
-        version: 8.6.18
+        specifier: '>=8.6.19 <9'
+        version: 8.6.19
       tsup:
         specifier: ^8
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@6.0.3)(yaml@2.9.0)
@@ -402,7 +404,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@25.0.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@25.0.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   apps/desktop:
     dependencies:
@@ -514,7 +516,7 @@ importers:
         version: 7.18.0(eslint@8.57.1)(typescript@5.9.3)
       '@vitejs/plugin-react':
         specifier: ^4.3.1
-        version: 4.7.0(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+        version: 4.7.0(vite@6.4.5(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       eslint:
         specifier: ^8.57.0
         version: 8.57.1
@@ -540,8 +542,8 @@ importers:
         specifier: ^5.5.3
         version: 5.9.3
       vite:
-        specifier: '>=6.4.3'
-        version: 6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+        specifier: '>=6.4.4 <7'
+        version: 6.4.5(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
 
   apps/mobile:
     dependencies:
@@ -2302,7 +2304,7 @@ packages:
     resolution: {integrity: sha512-qYDdL7fPwLRI+bJNurVcis+tNgJmvWjH4YTBGXTA8xMuxFrnAz6E5o35iyzyKbq5J5Lr8mJGfrR5GXl+WGwhgQ==}
     peerDependencies:
       typescript: '>= 4.3.x'
-      vite: '>=6.4.3'
+      vite: '>=6.4.4 <7'
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -2848,69 +2850,69 @@ packages:
   '@storybook/addon-a11y@8.6.18':
     resolution: {integrity: sha512-LFvudttdIfDTNWprA8/N1vbiWbJRrNscyt2OP9Qwi85E1d3LKLy+e8AWiqY08gpy2OUYujK7AjxfpKtNeddrxw==}
     peerDependencies:
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-actions@8.6.14':
     resolution: {integrity: sha512-mDQxylxGGCQSK7tJPkD144J8jWh9IU9ziJMHfB84PKpI/V5ZgqMDnpr2bssTrUaGDqU5e1/z8KcRF+Melhs9pQ==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-backgrounds@8.6.14':
     resolution: {integrity: sha512-l9xS8qWe5n4tvMwth09QxH2PmJbCctEvBAc1tjjRasAfrd69f7/uFK4WhwJAstzBTNgTc8VXI4w8ZR97i1sFbg==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-controls@8.6.14':
     resolution: {integrity: sha512-IiQpkNJdiRyA4Mq9mzjZlvQugL/aE7hNgVxBBGPiIZG6wb6Ht9hNnBYpap5ZXXFKV9p2qVI0FZK445ONmAa+Cw==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-docs@8.6.14':
     resolution: {integrity: sha512-Obpd0OhAF99JyU5pp5ci17YmpcQtMNgqW2pTXV8jAiiipWpwO++hNDeQmLmlSXB399XjtRDOcDVkoc7rc6JzdQ==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-essentials@8.6.14':
     resolution: {integrity: sha512-5ZZSHNaW9mXMOFkoPyc3QkoNGdJHETZydI62/OASR0lmPlJ1065TNigEo5dJddmZNn0/3bkE8eKMAzLnO5eIdA==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-highlight@8.6.14':
     resolution: {integrity: sha512-4H19OJlapkofiE9tM6K/vsepf4ir9jMm9T+zw5L85blJZxhKZIbJ6FO0TCG9PDc4iPt3L6+aq5B0X29s9zicNQ==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-highlight@8.6.18':
     resolution: {integrity: sha512-wTFJ1DPM0C8gK6nGTJxH75byayQj7BPAz02fME4AOmT6clrBpVl1zSTFTkXaSr+k4xOfeMR/xNUfVskaXz6T9w==}
     peerDependencies:
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-measure@8.6.14':
     resolution: {integrity: sha512-1Tlyb72NX8aAqm6I6OICsUuGOP6hgnXcuFlXucyhKomPa6j3Eu2vKu561t/f0oGtAK2nO93Z70kVaEh5X+vaGw==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-outline@8.6.14':
     resolution: {integrity: sha512-CW857JvN6OxGWElqjlzJO2S69DHf+xO3WsEfT5mT3ZtIjmsvRDukdWfDU9bIYUFyA2lFvYjncBGjbK+I91XR7w==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-toolbars@8.6.14':
     resolution: {integrity: sha512-W/wEXT8h3VyZTVfWK/84BAcjAxTdtRiAkT2KAN0nbSHxxB5KEM1MjKpKu2upyzzMa3EywITqbfy4dP6lpkVTwQ==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/addon-viewport@8.6.14':
     resolution: {integrity: sha512-gNzVQbMqRC+/4uQTPI2ZrWuRHGquTMZpdgB9DrD88VTEjNudP+J6r8myLfr2VvGksBbUMHkGHMXHuIhrBEnXYA==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/blocks@8.6.14':
     resolution: {integrity: sha512-rBMHAfA39AGHgkrDze4RmsnQTMw1ND5fGWobr9pDcJdnDKWQWNRD7Nrlxj0gFlN3n4D9lEZhWGdFrCbku7FVAQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
     peerDependenciesMeta:
       react:
         optional: true
@@ -2920,16 +2922,16 @@ packages:
   '@storybook/builder-vite@8.6.18':
     resolution: {integrity: sha512-XLqnOv4C36jlTd4uC8xpWBxv+7GV4/05zWJ0wAcU4qflorropUTirt4UQPGkwIzi+BVAhs9pJj+m4k0IWJtpHg==}
     peerDependencies:
-      storybook: ^8.6.18
-      vite: '>=6.4.3'
+      storybook: '>=8.6.19 <9'
+      vite: '>=6.4.4 <7'
 
   '@storybook/components@8.6.18':
     resolution: {integrity: sha512-55yViiZzPS/cPBuOeW4QGxGqrusjXVyxuknmbYCIwDtFyyvI/CgbjXRHdxNBaIjz+IlftxvBmmSaOqFG5+/dkA==}
     peerDependencies:
-      storybook: ^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0
+      storybook: '>=8.6.19 <9'
 
-  '@storybook/core@8.6.18':
-    resolution: {integrity: sha512-dRBP2TnX6fGdS0T2mXBHjkS/3Nlu1ra1huovZVFuM67CYMzrhM/3hX/zru1vWSC5rqY93ZaAhjMciPW4pK5mMQ==}
+  '@storybook/core@8.6.19':
+    resolution: {integrity: sha512-o9TZn0YxSxjBOxkTlJWq9jFTZn53Wr83HNvX0k8YYxxA5evwt7kWubKs/RMTEIyXbsBKW7XUw7Cq9fLmhgJ3Bg==}
     peerDependencies:
       prettier: ^2 || ^3
     peerDependenciesMeta:
@@ -2939,12 +2941,12 @@ packages:
   '@storybook/csf-plugin@8.6.14':
     resolution: {integrity: sha512-dErtc9teAuN+eelN8FojzFE635xlq9cNGGGEu0WEmMUQ4iJ8pingvBO1N8X3scz4Ry7KnxX++NNf3J3gpxS8qQ==}
     peerDependencies:
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/csf-plugin@8.6.18':
     resolution: {integrity: sha512-x1ioz/L0CwaelCkHci3P31YtvwayN3FBftvwQOPbvRh9qeb4Cpz5IdVDmyvSxxYwXN66uAORNoqgjTi7B4/y5Q==}
     peerDependencies:
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
 
   '@storybook/global@5.0.0':
     resolution: {integrity: sha512-FcOqPAXACP0I3oJ/ws6/rrPT9WGhu915Cg8D02a9YxLo0DE9zI+a9A5gRGvmQ09fiWPukqI8ZAEoQEdWUKMQdQ==}
@@ -2959,31 +2961,31 @@ packages:
   '@storybook/instrumenter@8.6.18':
     resolution: {integrity: sha512-viEC1BGlYyjAzi1Tv3LZjByh7Y3Oh04u6QKsujxdeUbr5rUOH4pa/wCKmxXmY6yWrD4WjcNtojmUvQZN/66FXQ==}
     peerDependencies:
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
 
   '@storybook/manager-api@8.6.18':
     resolution: {integrity: sha512-BjIp12gEMgzFkEsgKpDIbZdnSWTZpm2dlws8WiPJCpgJtG+HWSxZ0/Ms30Au9yfwzQEKRSbV/5zpsKMGc2SIJw==}
     peerDependencies:
-      storybook: ^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0
+      storybook: '>=8.6.19 <9'
 
   '@storybook/preview-api@8.6.18':
     resolution: {integrity: sha512-joXRXh3GdVvzhbfIgmix1xs90p8Q/nja7AhEAC2egn5Pl7SKsIYZUCYI6UdrQANb2myg9P552LKXfPect8llKg==}
     peerDependencies:
-      storybook: ^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0
+      storybook: '>=8.6.19 <9'
 
   '@storybook/react-dom-shim@8.6.14':
     resolution: {integrity: sha512-0hixr3dOy3f3M+HBofp3jtMQMS+sqzjKNgl7Arfuj3fvjmyXOks/yGjDImySR4imPtEllvPZfhiQNlejheaInw==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      storybook: ^8.6.14
+      storybook: '>=8.6.19 <9'
 
   '@storybook/react-dom-shim@8.6.18':
     resolution: {integrity: sha512-N4xULcAWZQTUv4jy1/d346Tyb4gufuC3UaLCuU/iVSZ1brYF4OW3ANr+096btbMxY8pR/65lmtoqr5CTGwnBvA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
 
   '@storybook/react-vite@8.6.18':
     resolution: {integrity: sha512-qpSYyH2IizlEsI95MJTdIL6xpLSgiNCMoJpHu+IEqLnyvmecRR/YEZvcHalgdtawuXlimH0bAYuwIu3l8Vo6FQ==}
@@ -2992,8 +2994,8 @@ packages:
       '@storybook/test': 8.6.18
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      storybook: ^8.6.18
-      vite: '>=6.4.3'
+      storybook: '>=8.6.19 <9'
+      vite: '>=6.4.4 <7'
     peerDependenciesMeta:
       '@storybook/test':
         optional: true
@@ -3005,7 +3007,7 @@ packages:
       '@storybook/test': 8.6.18
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
       typescript: '>= 4.2.x'
     peerDependenciesMeta:
       '@storybook/test':
@@ -3016,12 +3018,17 @@ packages:
   '@storybook/test@8.6.18':
     resolution: {integrity: sha512-u/RwfWMyHcH0N2hqfMTw2CoZ58IXdeED3b8NmcHc8bmERB3byI5vVAkwYbcD7+WeRHIiym38ZHi0SRn+IpkO3Q==}
     peerDependencies:
-      storybook: ^8.6.18
+      storybook: '>=8.6.19 <9'
 
   '@storybook/theming@8.6.18':
     resolution: {integrity: sha512-n6OEjEtHupa2PdTwWzRepr7cO8NkDd4rgF6BKLitRbujOspLxzMBEqdphs+QLcuiCIgf33SqmEA64QWnbSMhPw==}
     peerDependencies:
-      storybook: ^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0
+      storybook: '>=8.6.19 <9'
+
+  '@storybook/theming@8.6.19':
+    resolution: {integrity: sha512-IRbIk5klNSnSqBye/0FgkkyyIbJjzW+p1qaKGOYI+yKRktLCInypl9bh5YFkaPpr0m4lk7wY/GzS0uXPL1gS3g==}
+    peerDependencies:
+      storybook: '>=8.6.19 <9'
 
   '@tanstack/query-core@5.101.0':
     resolution: {integrity: sha512-cQetA74EB+seWySv1TTKr828TnP0u39m6LykwDXIo84SNortpDkp30TMEjkqtYCNP9c40uT/iwl6MLiufEt0Ow==}
@@ -3456,7 +3463,7 @@ packages:
     resolution: {integrity: sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: '>=6.4.3'
+      vite: '>=6.4.4 <7'
 
   '@vitest/coverage-v8@4.1.11':
     resolution: {integrity: sha512-8MVGEFnJIcdGjcbfKmeq8z0pZHH0JlVtoVZH9Q/qwUp6wyFnEJUBMrw9DCaj+ra3vShGmhavjalMIhPNxZAUcw==}
@@ -3477,7 +3484,7 @@ packages:
     resolution: {integrity: sha512-2XJVD55d1o5AZous5CCGKS74g/riOj9odEt2bQpCVZeblHyHdnMeFl4jl0XjU21stf4mbjUkew2eXQZt65g5CQ==}
     peerDependencies:
       msw: ^2.4.9
-      vite: '>=6.4.3'
+      vite: '>=6.4.4 <7'
     peerDependenciesMeta:
       msw:
         optional: true
@@ -7194,8 +7201,8 @@ packages:
     resolution: {integrity: sha512-eLoXW/DHyl62zxY4SCaIgnRhuMr6ri4juEYARS8E6sCEqzKpOiE521Ucofdx+KnDZl5xmvGYaaKCk5FEOxJCoQ==}
     engines: {node: '>= 0.4'}
 
-  storybook@8.6.18:
-    resolution: {integrity: sha512-p8seiSI6FiVY6P3V0pG+5v7c8pDMehMAFRWEhG5XqIBSQszzOjDnW2rNvm3odoLKfo3V3P6Cs6Hv9ILzymULyQ==}
+  storybook@8.6.19:
+    resolution: {integrity: sha512-m1kbDTwaF8mwx0VdarVCF9nAedbxsAylD5nmohfe0cWRLn2UZGOtk/JuayhNeSQAvOgVa8rzoN9UvbAt0jnuIg==}
     hasBin: true
     peerDependencies:
       prettier: ^2 || ^3
@@ -7740,8 +7747,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vite@6.4.3:
-    resolution: {integrity: sha512-NTKlcQjlAK7MlQoyb6LgaqHc8sso/pVyUJYWMws3jg21uTJw/LddqIFPcPqP6PzpgbIcZyKI85sFE4HBrQDA8A==}
+  vite@6.4.5:
+    resolution: {integrity: sha512-4enwjFfi4IwtEh0w+jPzpLVOFQiPHmmzPxcHXQOyEur47o6u0jE573DmGpjA+7irXoMLYRZD5ZaFUEneS3abPg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
     peerDependencies:
@@ -7796,7 +7803,7 @@ packages:
       '@vitest/ui': 4.1.11
       happy-dom: '*'
       jsdom: '*'
-      vite: '>=6.4.3'
+      vite: '>=6.4.4 <7'
     peerDependenciesMeta:
       '@edge-runtime/vm':
         optional: true
@@ -10219,12 +10226,12 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
-  '@joshwooding/vite-plugin-react-docgen-typescript@0.5.0(typescript@6.0.3)(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@joshwooding/vite-plugin-react-docgen-typescript@0.5.0(typescript@6.0.3)(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
       glob: 10.5.0
       magic-string: 0.27.0
       react-docgen-typescript: 2.4.0(typescript@6.0.3)
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
     optionalDependencies:
       typescript: 6.0.3
 
@@ -10802,145 +10809,145 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@storybook/addon-a11y@8.6.18(storybook@8.6.18)':
+  '@storybook/addon-a11y@8.6.18(storybook@8.6.19)':
     dependencies:
-      '@storybook/addon-highlight': 8.6.18(storybook@8.6.18)
+      '@storybook/addon-highlight': 8.6.18(storybook@8.6.19)
       '@storybook/global': 5.0.0
-      '@storybook/test': 8.6.18(storybook@8.6.18)
+      '@storybook/test': 8.6.18(storybook@8.6.19)
       axe-core: 4.12.1
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/addon-actions@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-actions@8.6.14(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
       '@types/uuid': 9.0.8
       dequal: 2.0.3
       polished: 4.3.1
-      storybook: 8.6.18
+      storybook: 8.6.19
       uuid: 14.0.0
 
-  '@storybook/addon-backgrounds@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-backgrounds@8.6.14(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
       memoizerific: 1.11.3
-      storybook: 8.6.18
+      storybook: 8.6.19
       ts-dedent: 2.3.0
 
-  '@storybook/addon-controls@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-controls@8.6.14(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
       dequal: 2.0.3
-      storybook: 8.6.18
+      storybook: 8.6.19
       ts-dedent: 2.3.0
 
-  '@storybook/addon-docs@8.6.14(@types/react@19.2.17)(storybook@8.6.18)':
+  '@storybook/addon-docs@8.6.14(@types/react@19.2.17)(storybook@8.6.19)':
     dependencies:
       '@mdx-js/react': 3.1.1(@types/react@19.2.17)(react@18.3.1)
-      '@storybook/blocks': 8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)
-      '@storybook/csf-plugin': 8.6.14(storybook@8.6.18)
-      '@storybook/react-dom-shim': 8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)
+      '@storybook/blocks': 8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.19)
+      '@storybook/csf-plugin': 8.6.14(storybook@8.6.19)
+      '@storybook/react-dom-shim': 8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.19)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.18
+      storybook: 8.6.19
       ts-dedent: 2.3.0
     transitivePeerDependencies:
       - '@types/react'
 
-  '@storybook/addon-essentials@8.6.14(@types/react@19.2.17)(storybook@8.6.18)':
+  '@storybook/addon-essentials@8.6.14(@types/react@19.2.17)(storybook@8.6.19)':
     dependencies:
-      '@storybook/addon-actions': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-backgrounds': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-controls': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-docs': 8.6.14(@types/react@19.2.17)(storybook@8.6.18)
-      '@storybook/addon-highlight': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-measure': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-outline': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-toolbars': 8.6.14(storybook@8.6.18)
-      '@storybook/addon-viewport': 8.6.14(storybook@8.6.18)
-      storybook: 8.6.18
+      '@storybook/addon-actions': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-backgrounds': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-controls': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-docs': 8.6.14(@types/react@19.2.17)(storybook@8.6.19)
+      '@storybook/addon-highlight': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-measure': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-outline': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-toolbars': 8.6.14(storybook@8.6.19)
+      '@storybook/addon-viewport': 8.6.14(storybook@8.6.19)
+      storybook: 8.6.19
       ts-dedent: 2.3.0
     transitivePeerDependencies:
       - '@types/react'
 
-  '@storybook/addon-highlight@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-highlight@8.6.14(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/addon-highlight@8.6.18(storybook@8.6.18)':
+  '@storybook/addon-highlight@8.6.18(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/addon-measure@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-measure@8.6.14(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18
+      storybook: 8.6.19
       tiny-invariant: 1.3.3
 
-  '@storybook/addon-outline@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-outline@8.6.14(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.18
+      storybook: 8.6.19
       ts-dedent: 2.3.0
 
-  '@storybook/addon-toolbars@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-toolbars@8.6.14(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/addon-viewport@8.6.14(storybook@8.6.18)':
+  '@storybook/addon-viewport@8.6.14(storybook@8.6.19)':
     dependencies:
       memoizerific: 1.11.3
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/blocks@8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)':
+  '@storybook/blocks@8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.19)':
     dependencies:
       '@storybook/icons': 1.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      storybook: 8.6.18
+      storybook: 8.6.19
       ts-dedent: 2.3.0
     optionalDependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@storybook/builder-vite@8.6.18(storybook@8.6.18)(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@storybook/builder-vite@8.6.18(storybook@8.6.19)(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
-      '@storybook/csf-plugin': 8.6.18(storybook@8.6.18)
+      '@storybook/csf-plugin': 8.6.18(storybook@8.6.19)
       browser-assert: 1.2.1
-      storybook: 8.6.18
+      storybook: 8.6.19
       ts-dedent: 2.3.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
 
-  '@storybook/components@8.6.18(storybook@8.6.18)':
+  '@storybook/components@8.6.18(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/core@8.6.18(storybook@8.6.18)':
+  '@storybook/core@8.6.19(storybook@8.6.19)':
     dependencies:
-      '@storybook/theming': 8.6.18(storybook@8.6.18)
+      '@storybook/theming': 8.6.19(storybook@8.6.19)
       better-opn: 3.0.2
       browser-assert: 1.2.1
-      esbuild: 0.25.12
-      esbuild-register: 3.6.0(esbuild@0.25.12)
+      esbuild: 0.28.1
+      esbuild-register: 3.6.0(esbuild@0.28.1)
       jsdoc-type-pratt-parser: 4.8.0
       process: 0.11.10
       recast: 0.23.11
       semver: 7.8.4
       util: 0.12.5
-      ws: 8.21.0
+      ws: 8.22.0
     transitivePeerDependencies:
       - bufferutil
       - storybook
       - supports-color
       - utf-8-validate
 
-  '@storybook/csf-plugin@8.6.14(storybook@8.6.18)':
+  '@storybook/csf-plugin@8.6.14(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
       unplugin: 1.16.1
 
-  '@storybook/csf-plugin@8.6.18(storybook@8.6.18)':
+  '@storybook/csf-plugin@8.6.18(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
       unplugin: 1.16.1
 
   '@storybook/global@5.0.0': {}
@@ -10950,83 +10957,87 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@storybook/instrumenter@8.6.18(storybook@8.6.18)':
+  '@storybook/instrumenter@8.6.18(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
       '@vitest/utils': 2.1.9
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/manager-api@8.6.18(storybook@8.6.18)':
+  '@storybook/manager-api@8.6.18(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/preview-api@8.6.18(storybook@8.6.18)':
+  '@storybook/preview-api@8.6.18(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/react-dom-shim@8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18)':
+  '@storybook/react-dom-shim@8.6.14(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.19)':
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/react-dom-shim@8.6.18(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.18)':
+  '@storybook/react-dom-shim@8.6.18(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.19)':
     dependencies:
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/react-vite@8.6.18(@storybook/test@8.6.18(storybook@8.6.18))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(rollup@4.62.0)(storybook@8.6.18)(typescript@6.0.3)(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@storybook/react-vite@8.6.18(@storybook/test@8.6.18(storybook@8.6.19))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(rollup@4.62.0)(storybook@8.6.19)(typescript@6.0.3)(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
-      '@joshwooding/vite-plugin-react-docgen-typescript': 0.5.0(typescript@6.0.3)(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@joshwooding/vite-plugin-react-docgen-typescript': 0.5.0(typescript@6.0.3)(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@rollup/pluginutils': 5.4.0(rollup@4.62.0)
-      '@storybook/builder-vite': 8.6.18(storybook@8.6.18)(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
-      '@storybook/react': 8.6.18(@storybook/test@8.6.18(storybook@8.6.18))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.18)(typescript@6.0.3)
+      '@storybook/builder-vite': 8.6.18(storybook@8.6.19)(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@storybook/react': 8.6.18(@storybook/test@8.6.18(storybook@8.6.19))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.19)(typescript@6.0.3)
       find-up: 5.0.0
       magic-string: 0.30.21
       react: 19.0.0
       react-docgen: 7.1.1
       react-dom: 19.0.0(react@19.0.0)
       resolve: 1.22.12
-      storybook: 8.6.18
+      storybook: 8.6.19
       tsconfig-paths: 4.2.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
     optionalDependencies:
-      '@storybook/test': 8.6.18(storybook@8.6.18)
+      '@storybook/test': 8.6.18(storybook@8.6.19)
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  '@storybook/react@8.6.18(@storybook/test@8.6.18(storybook@8.6.18))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.18)(typescript@6.0.3)':
+  '@storybook/react@8.6.18(@storybook/test@8.6.18(storybook@8.6.19))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.19)(typescript@6.0.3)':
     dependencies:
-      '@storybook/components': 8.6.18(storybook@8.6.18)
+      '@storybook/components': 8.6.18(storybook@8.6.19)
       '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.6.18(storybook@8.6.18)
-      '@storybook/preview-api': 8.6.18(storybook@8.6.18)
-      '@storybook/react-dom-shim': 8.6.18(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.18)
-      '@storybook/theming': 8.6.18(storybook@8.6.18)
+      '@storybook/manager-api': 8.6.18(storybook@8.6.19)
+      '@storybook/preview-api': 8.6.18(storybook@8.6.19)
+      '@storybook/react-dom-shim': 8.6.18(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.19)
+      '@storybook/theming': 8.6.18(storybook@8.6.19)
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
-      storybook: 8.6.18
+      storybook: 8.6.19
     optionalDependencies:
-      '@storybook/test': 8.6.18(storybook@8.6.18)
+      '@storybook/test': 8.6.18(storybook@8.6.19)
       typescript: 6.0.3
 
-  '@storybook/test@8.6.18(storybook@8.6.18)':
+  '@storybook/test@8.6.18(storybook@8.6.19)':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/instrumenter': 8.6.18(storybook@8.6.18)
+      '@storybook/instrumenter': 8.6.18(storybook@8.6.19)
       '@testing-library/dom': 10.4.0
       '@testing-library/jest-dom': 6.5.0
       '@testing-library/user-event': 14.5.2(@testing-library/dom@10.4.0)
       '@vitest/expect': 2.0.5
       '@vitest/spy': 2.0.5
-      storybook: 8.6.18
+      storybook: 8.6.19
 
-  '@storybook/theming@8.6.18(storybook@8.6.18)':
+  '@storybook/theming@8.6.18(storybook@8.6.19)':
     dependencies:
-      storybook: 8.6.18
+      storybook: 8.6.19
+
+  '@storybook/theming@8.6.19(storybook@8.6.19)':
+    dependencies:
+      storybook: 8.6.19
 
   '@tanstack/query-core@5.101.0': {}
 
@@ -11551,7 +11562,7 @@ snapshots:
       '@urql/core': 5.2.0(graphql@16.14.2)
       wonka: 6.3.6
 
-  '@vitejs/plugin-react@4.7.0(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@vitejs/plugin-react@4.7.0(vite@6.4.5(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7)
@@ -11559,11 +11570,11 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@4.7.0(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@vitejs/plugin-react@4.7.0(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7)
@@ -11571,7 +11582,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -11587,7 +11598,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
 
   '@vitest/expect@2.0.5':
     dependencies:
@@ -11605,32 +11616,32 @@ snapshots:
       chai: 6.3.0
       tinyrainbow: 3.2.0
 
-  '@vitest/mocker@4.1.11(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.11(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
       msw: 2.14.6(@types/node@22.19.21)(typescript@6.0.3)
-      vite: 6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
 
-  '@vitest/mocker@4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
       msw: 2.14.6(@types/node@26.6.5)(typescript@5.9.3)
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
 
-  '@vitest/mocker@4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
       msw: 2.14.6(@types/node@26.6.5)(typescript@6.0.3)
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
 
   '@vitest/pretty-format@2.0.5':
     dependencies:
@@ -12821,10 +12832,10 @@ snapshots:
       is-date-object: 1.1.0
       is-symbol: 1.1.1
 
-  esbuild-register@3.6.0(esbuild@0.25.12):
+  esbuild-register@3.6.0(esbuild@0.28.1):
     dependencies:
       debug: 4.4.3
-      esbuild: 0.25.12
+      esbuild: 0.28.1
     transitivePeerDependencies:
       - supports-color
 
@@ -16459,9 +16470,9 @@ snapshots:
       es-errors: 1.3.0
       internal-slot: 1.1.0
 
-  storybook@8.6.18:
+  storybook@8.6.19:
     dependencies:
-      '@storybook/core': 8.6.18(storybook@8.6.18)
+      '@storybook/core': 8.6.19(storybook@8.6.19)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -16999,7 +17010,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0):
+  vite@6.4.5(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)
@@ -17015,7 +17026,7 @@ snapshots:
       terser: 5.48.0
       yaml: 2.9.0
 
-  vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0):
+  vite@6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)
@@ -17031,7 +17042,7 @@ snapshots:
       terser: 5.48.0
       yaml: 2.9.0
 
-  vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0):
+  vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)
@@ -17047,10 +17058,10 @@ snapshots:
       terser: 5.48.0
       yaml: 2.9.0
 
-  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
+  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@22.19.21)(typescript@6.0.3))(vite@6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -17067,7 +17078,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
@@ -17077,10 +17088,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@25.0.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
+  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@25.0.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -17097,7 +17108,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
@@ -17107,10 +17118,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
+  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -17127,7 +17138,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
@@ -17137,10 +17148,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
+  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@5.9.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -17157,7 +17168,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
@@ -17167,10 +17178,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
+  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1)(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(msw@2.14.6(@types/node@26.6.5)(typescript@6.0.3))(vite@6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -17187,7 +17198,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 6.4.3(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
+      vite: 6.4.5(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.27.0)(terser@5.48.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
