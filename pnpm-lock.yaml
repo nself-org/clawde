@@ -23,7 +23,7 @@ overrides:
   postcss: '>=8.5.18'
   shell-quote: '>=1.9.0'
   tar: '>=7.5.19'
-  undici: '>=7.29.1 <8'
+  undici: '>=7.30.1 <8'
   '@fastify/busboy': '>=3.2.1'
   brace-expansion@1: ^1.1.20
   brace-expansion@2: ^2.1.6
@@ -7653,8 +7653,8 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@7.30.0:
-    resolution: {integrity: sha512-dkrQXeHSaoamnItlYbmzG0wFYrM0ZwDxCIg0A7aKjTyyhh9svRzCNFEzV+Vm05/yehjCzjDZ31KXfGEjYSztDQ==}
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -9178,7 +9178,7 @@ snapshots:
       structured-headers: 0.4.1
       tar: 7.5.22
       terminal-link: 2.1.1
-      undici: 7.30.0
+      undici: 7.30.1
       wrap-ansi: 7.0.0
       ws: 8.21.0
     transitivePeerDependencies:
@@ -10730,7 +10730,7 @@ snapshots:
     dependencies:
       progress: 2.0.3
       proxy-from-env: 1.1.0
-      undici: 7.30.0
+      undici: 7.30.1
       which: 2.0.2
     optionalDependencies:
       '@sentry/cli-darwin': 3.5.1
@@ -14709,7 +14709,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.1
-      undici: 7.30.0
+      undici: 7.30.1
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -14736,7 +14736,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.1
-      undici: 7.30.0
+      undici: 7.30.1
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -16929,7 +16929,7 @@ snapshots:
   undici-types@8.9.0:
     optional: true
 
-  undici@7.30.0: {}
+  undici@7.30.1: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
