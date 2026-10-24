@@ -119,7 +119,7 @@ function AddAccountForm({
     // Zod validation
     const result = oauthSetupSchema.safeParse({ provider } as OAuthSetupFormData);
     if (!result.success) {
-      setError(result.error.errors[0]?.message ?? "Invalid provider");
+      setError(result.error.issues[0]?.message ?? "Invalid provider");
       return;
     }
 

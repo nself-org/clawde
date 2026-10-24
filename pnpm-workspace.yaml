@@ -39,6 +39,7 @@ overrides:
   # Metro 0.83.8 removes image-size (GHSA-5p2g-fcmc-qvqq,
   # GHSA-w3rx-r6r6-pgpr). Overriding image-size to 2.x breaks Metro 0.82's API.
   'metro@<0.83.8': '0.83.8'
+  'zod@>=3.24.0 <4.6.6': '^4.6.7'
 auditConfig:
   # Same existing exceptions, keyed by GHSA because registry records omit CVEs.
   # Remove each when an upstream patched version is published.
