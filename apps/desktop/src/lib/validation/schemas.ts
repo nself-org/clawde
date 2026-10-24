@@ -47,7 +47,7 @@ const OAUTH_PROVIDERS: [OAuthProvider, ...OAuthProvider[]] = ['google', 'github'
  */
 export const oauthSetupSchema = z.object({
   provider: z.enum(OAUTH_PROVIDERS, {
-    errorMap: () => ({ message: 'Please select a valid OAuth provider (google, github, or anthropic)' }),
+    error: 'Please select a valid OAuth provider (google, github, or anthropic)',
   }),
 });
 
@@ -71,7 +71,7 @@ export const serverModeSchema = z.object({
       'Host must be a valid hostname or IP address'
     ),
   port: z
-    .number({ invalid_type_error: 'Port must be a number' })
+    .number({ error: 'Port must be a number' })
     .int('Port must be a whole number')
     .min(1024, 'Port must be at least 1024')
     .max(65535, 'Port cannot exceed 65535'),
