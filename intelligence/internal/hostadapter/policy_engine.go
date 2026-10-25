@@ -13,8 +13,10 @@ package hostadapter
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 )
 
 // Trust levels from cd_trust_registry (mcp-server-spec §3).
@@ -44,6 +46,40 @@ type PolicyEntry struct {
 	ClientID  string
 	Level     int
 	ToolPerms map[string]bool
+}
+
+// policyFile is the on-disk caller policy (CLAWDE_MCP_POLICY_FILE). Level
+// defaults to TrustElevated (local Claude Code session) when omitted.
+type policyFile struct {
+	Level     *int            `json:"level"`
+	ToolPerms map[string]bool `json:"tool_perms"`
+}
+
+// LoadPolicyEntry builds the caller's PolicyEntry for production wiring. An
+// empty path keeps the local default (elevated, no per-tool overrides). A set
+// path that cannot be read or parsed is an error so the server fails closed
+// instead of silently dropping the operator's denials.
+func LoadPolicyEntry(clientID, path string) (PolicyEntry, error) {
+	e := PolicyEntry{ClientID: clientID, Level: TrustElevated}
+	if path == "" {
+		return e, nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return PolicyEntry{}, fmt.Errorf("policy file: %w", err)
+	}
+	var f policyFile
+	if err := json.Unmarshal(raw, &f); err != nil {
+		return PolicyEntry{}, fmt.Errorf("policy file %s: %w", path, err)
+	}
+	if f.Level != nil {
+		if *f.Level < TrustNone || *f.Level > TrustElevated {
+			return PolicyEntry{}, fmt.Errorf("policy file %s: level %d out of range 0..3", path, *f.Level)
+		}
+		e.Level = *f.Level
+	}
+	e.ToolPerms = f.ToolPerms
+	return e, nil
 }
 
 type trustLevelPolicy struct{ callers map[string]PolicyEntry }

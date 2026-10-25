@@ -288,12 +288,19 @@ type MCPServer struct {
 // NewMCPServer wires the dispatch chain. clientID is the local clawd-resolved
 // MCP client identity (only trusted ids may invoke tools — deny-by-default).
 func NewMCPServer(adapter *ClaudeCodeAdapter, clientID string) *MCPServer {
+	return NewMCPServerWithPolicy(adapter, PolicyEntry{ClientID: clientID, Level: TrustElevated})
+}
+
+// NewMCPServerWithPolicy is NewMCPServer with an explicit caller policy (trust
+// level and per-tool permissions), as loaded by LoadPolicyEntry in production.
+func NewMCPServerWithPolicy(adapter *ClaudeCodeAdapter, entry PolicyEntry) *MCPServer {
+	clientID := entry.ClientID
 	tools := []string{toolRetrieveContext, toolRunAnalysis, toolListSymbols}
 	return &MCPServer{
 		adapter:     adapter,
 		clientID:    clientID,
 		trust:       newStaticTrustRegistry(clientID),
-		policy:      NewPolicyEngine(PolicyEntry{ClientID: clientID, Level: TrustElevated}),
+		policy:      NewPolicyEngine(entry),
 		supplyChain: newToolSetSupplyChain(tools...),
 		logger:      adapter.logger,
 	}

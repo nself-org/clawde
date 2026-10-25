@@ -5,6 +5,8 @@ package hostadapter
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -68,5 +70,59 @@ func TestMCPServer_PolicyDeniesLowTrustCaller(t *testing.T) {
 	}
 	if resps[0].Error.Code != rpcAccessDenied || !strings.Contains(resps[0].Error.Message, "denied by policy") {
 		t.Errorf("want policy denial, got %+v", resps[0].Error)
+	}
+}
+
+// Production wiring: a policy file loaded by LoadPolicyEntry must reach the live
+// server so a registry denial blocks a tool while other tools still work. No
+// private field is replaced; this goes through the same constructor as main.go.
+func TestMCPServer_ProductionPolicyFileDenies(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "policy.json")
+	if err := os.WriteFile(path, []byte(`{"tool_perms":{"list_symbols":false}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entry, err := LoadPolicyEntry("local", path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	adapter := NewClaudeCodeAdapter(&mcpMockSource{rc: &RetrievedContext{}}, nil, nil)
+	if err := adapter.Install(context.Background(), AdapterConfig{WorkspaceID: "ws-1"}); err != nil {
+		t.Fatal(err)
+	}
+	s := NewMCPServerWithPolicy(adapter, entry)
+	resps := drive(t, s,
+		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_symbols","arguments":{}}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"retrieve_context","arguments":{"query":"x"}}}`)
+	if len(resps) != 2 {
+		t.Fatalf("want 2 responses, got %+v", resps)
+	}
+	if resps[0].Error == nil || resps[0].Error.Code != rpcAccessDenied || !strings.Contains(resps[0].Error.Message, "denied by policy") {
+		t.Errorf("list_symbols: want policy denial, got %+v", resps[0])
+	}
+	if resps[1].Error != nil {
+		t.Errorf("retrieve_context: want allowed, got %+v", resps[1].Error)
+	}
+}
+
+func TestLoadPolicyEntry(t *testing.T) {
+	if e, err := LoadPolicyEntry("c", ""); err != nil || e.Level != TrustElevated || e.ToolPerms != nil {
+		t.Errorf("empty path: want elevated default, got %+v, %v", e, err)
+	}
+	dir := t.TempDir()
+	bad := map[string]string{"malformed": `{`, "level out of range": `{"level":9}`}
+	for name, body := range bad {
+		p := filepath.Join(dir, strings.ReplaceAll(name, " ", "_")+".json")
+		_ = os.WriteFile(p, []byte(body), 0o600)
+		if _, err := LoadPolicyEntry("c", p); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+	if _, err := LoadPolicyEntry("c", filepath.Join(dir, "missing.json")); err == nil {
+		t.Error("missing file: want error (fail closed)")
+	}
+	p := filepath.Join(dir, "ok.json")
+	_ = os.WriteFile(p, []byte(`{"level":1}`), 0o600)
+	if e, err := LoadPolicyEntry("c", p); err != nil || e.Level != TrustLimited {
+		t.Errorf("level 1: got %+v, %v", e, err)
 	}
 }

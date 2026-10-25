@@ -5,7 +5,9 @@
 //             clawd resolves the client identity (CLAWDE_MCP_CLIENT_ID) and the
 //             active workspace (CLAWDE_WORKSPACE_ID); HMAC to clawde-intelligence
 //             is configured downstream via CLAWDE_GATEWAY_HMAC_SECRET.
-// Inputs:     env CLAWDE_MCP_CLIENT_ID, CLAWDE_WORKSPACE_ID, CLAWDE_GRPC_ADDR.
+// Inputs:     env CLAWDE_MCP_CLIENT_ID, CLAWDE_WORKSPACE_ID, CLAWDE_GRPC_ADDR,
+//             optional CLAWDE_MCP_POLICY_FILE (JSON {"level":0..3,"tool_perms":{tool:bool}};
+//             unreadable or invalid file aborts startup).
 // Outputs:    JSON-RPC 2.0 responses on stdout; audit/log lines on stderr.
 // Constraints: stdio only — never net.Listen. When CLAWDE_GRPC_ADDR is
 //              unreachable, adapter degrades gracefully (ADR-001): log warning,
@@ -53,7 +55,12 @@ func main() {
 	}
 
 	clientID := envOr("CLAWDE_MCP_CLIENT_ID", "")
-	srv := hostadapter.NewMCPServer(adapter, clientID)
+	entry, err := hostadapter.LoadPolicyEntry(clientID, os.Getenv("CLAWDE_MCP_POLICY_FILE"))
+	if err != nil {
+		logger.Error("mcp-server policy load failed", "error", err)
+		os.Exit(1)
+	}
+	srv := hostadapter.NewMCPServerWithPolicy(adapter, entry)
 
 	if err := srv.Serve(context.Background(), os.Stdin, os.Stdout); err != nil {
 		logger.Error("mcp-server stdio loop exited", "error", err)
