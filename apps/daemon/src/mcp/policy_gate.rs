@@ -248,6 +248,109 @@ mod tests {
         assert_eq!(task_state_from_status("bogus"), None);
     }
 
+    use crate::policy::mcp_trust::{McpTrustEntry, TrustDatabase, TrustLevel};
+    use crate::policy::risk::RiskDatabase;
+    use crate::policy::supply_chain::SupplyChainPolicy;
+    use serde_json::json;
+    use tokio::sync::RwLock;
+
+    /// A gate over the default risk rules where `caller` is trusted and the
+    /// providing server is registered, so only the policy rules decide.
+    fn gate() -> PolicyGate {
+        let mut trust = TrustDatabase::empty();
+        trust.upsert(McpTrustEntry {
+            server_name: "caller".into(),
+            trust: TrustLevel::Trusted,
+            command_hash: None,
+            allowed_tools: vec![],
+        });
+        let mut supply_chain = SupplyChainPolicy::empty();
+        supply_chain
+            .verify_or_register("clawd", "clawd", &[])
+            .expect("register server");
+        let engine = PolicyEngine::new(
+            Arc::new(RwLock::new(RiskDatabase::default_rules())),
+            Arc::new(RwLock::new(trust)),
+            Arc::new(supply_chain),
+        );
+        PolicyGate::new(
+            Arc::new(engine),
+            ServerIdentity {
+                name: "clawd".into(),
+                command: "clawd".into(),
+                args: vec![],
+            },
+        )
+    }
+
+    /// D-1141: `create_task` takes no `task_id`, so no task state exists for
+    /// the Medium-risk Active-task rule to inspect. It must still pass.
+    #[tokio::test]
+    async fn create_task_without_task_id_passes_gate() {
+        let args = json!({ "title": "t", "repo": "/r" });
+        let out = gate()
+            .check("caller", "create_task", &args, "agent-1", Ok(None))
+            .await;
+        assert_eq!(out, Ok(None));
+    }
+
+    /// D-1142: `request_approval` is how approval is initiated, so the gate
+    /// must not answer it with ApprovalRequired. It needs an Active task.
+    #[tokio::test]
+    async fn request_approval_on_active_task_passes_gate() {
+        let args = json!({
+            "task_id": "t1",
+            "tool_name": "apply_patch",
+            "arguments": {},
+            "risk_level": "high"
+        });
+        let out = gate()
+            .check(
+                "caller",
+                "request_approval",
+                &args,
+                "agent-1",
+                Ok(Some(TaskState::Active)),
+            )
+            .await;
+        assert_eq!(out, Ok(Some(TaskState::Active)));
+    }
+
+    #[tokio::test]
+    async fn request_approval_without_active_task_is_denied() {
+        let args = json!({ "task_id": "t1", "tool_name": "apply_patch", "arguments": {}, "risk_level": "high" });
+        for state in [None, Some(TaskState::Pending), Some(TaskState::Done)] {
+            let out = gate()
+                .check("caller", "request_approval", &args, "agent-1", Ok(state))
+                .await;
+            assert!(matches!(out, Err(GateDenial::PolicyDenied(_))), "{out:?}");
+        }
+    }
+
+    /// The exemptions are per tool: other Medium and High tools keep their rules.
+    #[tokio::test]
+    async fn other_tools_keep_their_rules() {
+        let g = gate();
+        let args = json!({});
+        let out = g
+            .check("caller", "run_tests", &args, "agent-1", Ok(None))
+            .await;
+        assert!(matches!(out, Err(GateDenial::PolicyDenied(_))), "{out:?}");
+        let out = g
+            .check(
+                "caller",
+                "apply_patch",
+                &args,
+                "agent-1",
+                Ok(Some(TaskState::Active)),
+            )
+            .await;
+        assert!(
+            matches!(out, Err(GateDenial::ApprovalRequired(_))),
+            "{out:?}"
+        );
+    }
+
     #[test]
     fn denial_prefixes() {
         let e = GateDenial::SupplyChain("x".into()).into_error().to_string();

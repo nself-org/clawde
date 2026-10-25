@@ -1,14 +1,12 @@
 // Package worker — unit and integration tests.
 //
-// Tests that require a live Postgres + pgmq are tagged with a build constraint
-// or skipped via t.Skip when CLAWDE_TEST_PG_DSN is unset.
-// Pure unit tests (stub store) run without any external dependency.
+// Pure unit tests (stub store) run without any external dependency. The
+// Postgres-backed tests live in worker_integration_test.go.
 package worker
 
 import (
 	"context"
 	"errors"
-	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -307,37 +305,4 @@ func TestPool_50Jobs_StubStore(t *testing.T) {
 	if len(store.dlq) != 0 {
 		t.Fatalf("expected empty DLQ, got %d", len(store.dlq))
 	}
-}
-
-// ── Postgres-dependent tests (skipped without DSN) ────────────────────────────
-
-// TestPool_Integration_Postgres runs a live integration test.
-// Requires CLAWDE_TEST_PG_DSN to be set with a Postgres DSN that has pgmq installed.
-// Skip gracefully in CI. Run locally: CLAWDE_TEST_PG_DSN=postgres://... go test -run Integration ./...
-func TestPool_Integration_Postgres(t *testing.T) {
-	// P6-E11-W2-S3-T15 (CI-masking sweep): this used to read `dsn := ""` — a
-	// hardcoded empty string that could never be satisfied by any
-	// environment, making the "skip when no test database is configured"
-	// comment above misleading (bug ledger: clawde-worker-test-always-skips.md).
-	dsn := os.Getenv("CLAWDE_TEST_PG_DSN")
-	if dsn == "" {
-		t.Skip("Skipping Postgres integration test: CLAWDE_TEST_PG_DSN not set")
-	}
-	// Real pgx-backed store implementation would be tested here.
-	// When a real DB is available, verify:
-	//   1. pgmq.read returns messages
-	//   2. pgmq.delete acks correctly
-	//   3. DLQ is empty after successful batch
-	_ = dsn
-}
-
-// TestListenNotify_Integration_Postgres verifies NOTIFY received by Go subscriber <1s.
-// Skipped without CLAWDE_TEST_PG_DSN.
-func TestListenNotify_Integration_Postgres(t *testing.T) {
-	// P6-E11-W2-S3-T15: same always-skip fix as TestPool_Integration_Postgres above.
-	dsn := os.Getenv("CLAWDE_TEST_PG_DSN")
-	if dsn == "" {
-		t.Skip("Skipping LISTEN/NOTIFY integration test: CLAWDE_TEST_PG_DSN not set")
-	}
-	_ = dsn
 }
