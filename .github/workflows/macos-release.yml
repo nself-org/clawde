@@ -54,7 +54,9 @@ permissions:
   contents: write
 
 env:
-  PNPM_VERSION: '9'
+  # pnpm 10+: overrides and auditConfig live in pnpm-workspace.yaml (pnpm 9 ignores
+  # them, so a frozen install would not match pnpm-lock.yaml). Same as ci.yml.
+  PNPM_VERSION: '10'
   NODE_VERSION: '20'
 
 jobs:
@@ -78,6 +80,26 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      # Mirrors ci.yml desktop-check: pnpm-workspace.yaml resolves
+      # ../packages/@nself/* relative to the clawde root, and pnpm-lock.yaml
+      # records those importers' manifests, so packages must be checked out at the
+      # same pinned ref as ci.yml and mobile-ci.yml. Bump all three together.
+      # nself-org/packages is public, so github.token is enough.
+      - name: Checkout @nself packages (sibling workspace dep)
+        uses: actions/checkout@v7
+        with:
+          repository: nself-org/packages
+          ref: e8d093016b1873bf47cf7d8873fd181ec66925d5
+          token: ${{ secrets.GH_PAT_CROSS_REPO || github.token }}
+          path: _packages_checkout
+
+      - name: Link packages to sibling path
+        run: |
+          # actions/checkout can't write outside GITHUB_WORKSPACE, so check out
+          # into _packages_checkout and symlink it to the parent path.
+          mkdir -p "${{ github.workspace }}/../packages"
+          ln -s "${{ github.workspace }}/_packages_checkout/@nself" "${{ github.workspace }}/../packages/@nself"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
@@ -113,8 +135,7 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
-      - name: Install pnpm dependencies
-        working-directory: apps/desktop
+      - name: Install pnpm dependencies (workspace root)
         run: pnpm install --frozen-lockfile
 
       - name: Write API key to disk for notarytool

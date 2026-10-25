@@ -103,7 +103,7 @@ semver = "1"
 chrono = { version = "0.4", features = ["serde"] }
 
 # YAML serialization (task specs in .claw/tasks/<id>/task.yaml)
-serde_yaml = "0.9"
+serde_norway = "0.9"
 
 # Regex for secret redaction and eval scanners
 regex = "1"

@@ -29,6 +29,7 @@ use serde_json::Value;
 use tracing::warn;
 
 use crate::policy::hooks::PolicyHooks;
+use crate::policy::mcp_trust::TrustLevel;
 use crate::policy::output_scan::scan_log_output;
 use crate::policy::{PolicyDecision, PolicyEngine};
 use crate::tasks::reducer::TaskState;
@@ -49,7 +50,7 @@ pub struct ServerIdentity {
 /// Why the gate refused a call.
 #[derive(Debug, Clone, PartialEq)]
 pub enum GateDenial {
-    /// Caller missing, or not trusted for this tool.
+    /// Caller missing or not trusted.
     UnknownCaller(String),
     /// The policy engine or the pre-tool hook denied the call.
     PolicyDenied(String),
@@ -122,16 +123,21 @@ impl PolicyGate {
         if caller.is_empty() {
             return Err(GateDenial::UnknownCaller("caller identity missing".into()));
         }
-        if !self
-            .engine
-            .trust_db
-            .read()
-            .await
-            .is_tool_allowed(caller, tool)
         {
-            return Err(GateDenial::UnknownCaller(format!(
-                "caller '{caller}' not trusted for tool '{tool}'"
-            )));
+            let trust = self.engine.trust_db.read().await;
+            if !trust.is_tool_allowed(caller, tool) {
+                // A trusted caller whose allow-list omits the tool is a policy
+                // denial; only a missing or untrusted caller is an unknown entity.
+                return Err(if trust.get_trust(caller) == TrustLevel::Trusted {
+                    GateDenial::PolicyDenied(format!(
+                        "tool '{tool}' not permitted for caller '{caller}'"
+                    ))
+                } else {
+                    GateDenial::UnknownCaller(format!(
+                        "caller '{caller}' not trusted for tool '{tool}'"
+                    ))
+                });
+            }
         }
         let state = task_state.map_err(|e| {
             // Real cause stays server-side; the caller gets fixed text.
@@ -281,6 +287,43 @@ mod tests {
                 args: vec![],
             },
         )
+    }
+
+    /// A trusted caller whose allow-list omits the tool gets a policy denial,
+    /// not the unknown-entity code; an untrusted or unlisted caller still gets
+    /// the unknown-entity code.
+    #[tokio::test]
+    async fn tool_outside_trusted_callers_allow_list_is_policy_denied() {
+        let gate = gate();
+        {
+            let mut trust = gate.engine.trust_db.write().await;
+            trust.upsert(McpTrustEntry {
+                server_name: "limited".into(),
+                trust: TrustLevel::Trusted,
+                command_hash: None,
+                allowed_tools: vec!["read_file".into()],
+            });
+            trust.upsert(McpTrustEntry {
+                server_name: "shady".into(),
+                trust: TrustLevel::Untrusted,
+                command_hash: None,
+                allowed_tools: vec![],
+            });
+        }
+        let args = json!({ "path": "p" });
+        let out = gate
+            .check("limited", "apply_patch", &args, "agent-1", Ok(None))
+            .await;
+        assert!(matches!(out, Err(GateDenial::PolicyDenied(_))), "{out:?}");
+        let msg = out.unwrap_err().to_string();
+        assert!(msg.starts_with("MCP_POLICY_DENIED:"), "{msg}");
+
+        for caller in ["shady", "nobody"] {
+            let out = gate
+                .check(caller, "read_file", &args, "agent-1", Ok(None))
+                .await;
+            assert!(matches!(out, Err(GateDenial::UnknownCaller(_))), "{out:?}");
+        }
     }
 
     /// D-1141: `create_task` takes no `task_id`, so no task state exists for

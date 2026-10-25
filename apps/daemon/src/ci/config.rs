@@ -72,7 +72,7 @@ pub fn load(repo_path: &std::path::Path) -> anyhow::Result<CiConfig> {
     }
     let content = std::fs::read_to_string(&config_path)?;
     let config: CiConfig =
-        serde_yaml::from_str(&content).map_err(|e| anyhow::anyhow!("Invalid CI config: {e}"))?;
+        serde_norway::from_str(&content).map_err(|e| anyhow::anyhow!("Invalid CI config: {e}"))?;
     Ok(config)
 }
 

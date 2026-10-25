@@ -74,7 +74,7 @@ pub struct WorkflowRun {
 
 /// Parse a workflow recipe from YAML.
 pub fn parse_recipe_yaml(yaml: &str) -> Result<WorkflowRecipeYaml> {
-    let recipe: WorkflowRecipeYaml = serde_yaml::from_str(yaml)?;
+    let recipe: WorkflowRecipeYaml = serde_norway::from_str(yaml)?;
     Ok(recipe)
 }
 
@@ -103,11 +103,11 @@ pub struct WorkflowStepYaml {
 /// 5 built-in workflow recipes shipped with clawd.
 pub fn builtin_recipes() -> Vec<WorkflowRecipeYaml> {
     vec![
-        serde_yaml::from_str(CODE_REVIEW_YAML).unwrap(),
-        serde_yaml::from_str(RELEASE_PREP_YAML).unwrap(),
-        serde_yaml::from_str(ONBOARD_CODEBASE_YAML).unwrap(),
-        serde_yaml::from_str(DEBUG_SESSION_YAML).unwrap(),
-        serde_yaml::from_str(SPEC_TO_IMPL_YAML).unwrap(),
+        serde_norway::from_str(CODE_REVIEW_YAML).unwrap(),
+        serde_norway::from_str(RELEASE_PREP_YAML).unwrap(),
+        serde_norway::from_str(ONBOARD_CODEBASE_YAML).unwrap(),
+        serde_norway::from_str(DEBUG_SESSION_YAML).unwrap(),
+        serde_norway::from_str(SPEC_TO_IMPL_YAML).unwrap(),
     ]
 }
 

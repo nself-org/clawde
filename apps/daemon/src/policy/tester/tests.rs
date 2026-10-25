@@ -29,7 +29,7 @@ fn yaml_with(pass: &[&str], fail: &[&str]) -> String {
 #[test]
 fn summary_counts_are_total_passed_and_the_difference() {
     let file: PolicyTestFile =
-        serde_yaml::from_str(&yaml_with(&["rm -rf /"], &["echo hello", "git status"])).unwrap();
+        serde_norway::from_str(&yaml_with(&["rm -rf /"], &["echo hello", "git status"])).unwrap();
 
     let summary = run_test_file(&file);
     assert_eq!(summary.total, 3);
@@ -44,7 +44,7 @@ fn summary_counts_are_total_passed_and_the_difference() {
 #[test]
 fn each_result_records_the_actual_outcome_and_rule() {
     let file: PolicyTestFile =
-        serde_yaml::from_str(&yaml_with(&["rm -rf /"], &["echo hello"])).unwrap();
+        serde_norway::from_str(&yaml_with(&["rm -rf /"], &["echo hello"])).unwrap();
     let summary = run_test_file(&file);
 
     assert!(summary.results[0].passed);
@@ -144,7 +144,7 @@ async fn an_unparseable_file_does_not_abort_the_run() {
 /// written for — a regression here means the built-in rules drifted.
 #[test]
 fn the_seed_suite_parses_and_passes_completely() {
-    let file: PolicyTestFile = serde_yaml::from_str(SEED_POLICY_TESTS_YAML).unwrap();
+    let file: PolicyTestFile = serde_norway::from_str(SEED_POLICY_TESTS_YAML).unwrap();
     assert!(file.cases.len() >= 20);
 
     let summary = run_test_file(&file);
@@ -181,13 +181,13 @@ fn test_deny_network_pipe() {
 
 #[test]
 fn test_seed_yaml_parses() {
-    let file: PolicyTestFile = serde_yaml::from_str(SEED_POLICY_TESTS_YAML).unwrap();
+    let file: PolicyTestFile = serde_norway::from_str(SEED_POLICY_TESTS_YAML).unwrap();
     assert_eq!(file.cases.len(), 20);
 }
 
 #[test]
 fn test_all_seed_cases_pass() {
-    let file: PolicyTestFile = serde_yaml::from_str(SEED_POLICY_TESTS_YAML).unwrap();
+    let file: PolicyTestFile = serde_norway::from_str(SEED_POLICY_TESTS_YAML).unwrap();
     let summary = run_test_file(&file);
     let failures: Vec<_> = summary
         .results
