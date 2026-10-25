@@ -8,6 +8,15 @@ use super::engine::PolicyDecision;
 
 // ─── Approval rules ───────────────────────────────────────────────────────────
 
+/// Tools that create a task instead of acting on one. Their schema has no
+/// `task_id`, so no task state can exist for the Active-task rule to inspect.
+const TASKLESS_TOOLS: &[&str] = &["create_task"];
+
+/// Tools an agent calls to start the approval flow. Gating them behind
+/// approval would make approvals impossible to initiate, so they are allowed
+/// while the task is Active and denied otherwise.
+const APPROVAL_REQUEST_TOOLS: &[&str] = &["request_approval"];
+
 /// Configurable approval policy.
 ///
 /// The defaults are conservative: low-risk tools auto-approve, medium-risk
@@ -42,12 +51,33 @@ impl ApprovalRules {
     /// - `Medium`   → `Allow` only when task is `Active`+`Claimed`; otherwise `Deny`
     /// - `High`     → `NeedsApproval`
     /// - `Critical` → `NeedsApproval`
+    ///
+    /// Two tools are special-cased ahead of the matrix: [`TASKLESS_TOOLS`]
+    /// skip the Active-task requirement, and [`APPROVAL_REQUEST_TOOLS`] need an
+    /// Active task but never `NeedsApproval`.
     pub fn should_approve(
         &self,
         tool: &str,
         risk: RiskLevel,
         task_state: Option<&TaskState>,
     ) -> PolicyDecision {
+        if APPROVAL_REQUEST_TOOLS.contains(&tool) {
+            return if matches!(task_state, Some(TaskState::Active)) {
+                PolicyDecision::Allow
+            } else {
+                PolicyDecision::Deny {
+                    reason: format!(
+                        "approval-request tool '{}' requires an Active task (current: {})",
+                        tool,
+                        task_state.map_or_else(|| "none".to_string(), |s| s.to_string())
+                    ),
+                }
+            };
+        }
+        if risk == RiskLevel::Medium && TASKLESS_TOOLS.contains(&tool) {
+            return PolicyDecision::Allow;
+        }
+
         match risk {
             RiskLevel::Low => {
                 if self.auto_approve_low {
@@ -141,6 +171,48 @@ mod tests {
         let r = rules();
         let decision = r.should_approve("apply_patch", RiskLevel::High, Some(&TaskState::Active));
         assert!(matches!(decision, PolicyDecision::NeedsApproval { .. }));
+    }
+
+    #[test]
+    fn create_task_allowed_without_task() {
+        let r = rules();
+        assert_eq!(
+            r.should_approve("create_task", RiskLevel::Medium, None),
+            PolicyDecision::Allow
+        );
+    }
+
+    #[test]
+    fn taskless_exemption_is_per_tool() {
+        let r = rules();
+        let decision = r.should_approve("claim_task", RiskLevel::Medium, None);
+        assert!(matches!(decision, PolicyDecision::Deny { .. }));
+    }
+
+    #[test]
+    fn request_approval_allowed_on_active_task() {
+        let r = rules();
+        assert_eq!(
+            r.should_approve(
+                "request_approval",
+                RiskLevel::High,
+                Some(&TaskState::Active)
+            ),
+            PolicyDecision::Allow
+        );
+    }
+
+    #[test]
+    fn request_approval_denied_without_active_task() {
+        let r = rules();
+        for state in [
+            None,
+            Some(TaskState::Pending),
+            Some(TaskState::NeedsApproval),
+        ] {
+            let decision = r.should_approve("request_approval", RiskLevel::High, state.as_ref());
+            assert!(matches!(decision, PolicyDecision::Deny { .. }), "{state:?}");
+        }
     }
 
     #[test]
