@@ -17,7 +17,7 @@ func TestPolicyEngine_DenyByDefault(t *testing.T) {
 		PolicyEntry{ClientID: "limited", Level: TrustLimited},
 		PolicyEntry{ClientID: "none", Level: TrustNone},
 		PolicyEntry{ClientID: "override", Level: TrustLimited, ToolPerms: map[string]bool{
-			toolListSymbols: false, "ingest_doc_url": true,
+			toolListSymbols: false, "ingest_doc_url": true, "rm_rf": true,
 		}},
 	)
 	cases := []struct {
@@ -109,7 +109,19 @@ func TestLoadPolicyEntry(t *testing.T) {
 		t.Errorf("empty path: want elevated default, got %+v, %v", e, err)
 	}
 	dir := t.TempDir()
-	bad := map[string]string{"malformed": `{`, "level out of range": `{"level":9}`}
+	bad := map[string]string{
+		"malformed":           `{`,
+		"level out of range":  `{"level":9}`,
+		"null document":       `null`,
+		"array document":      `[]`,
+		"null level":          `{"level":null}`,
+		"string level":        `{"level":"1"}`,
+		"null tool perms":     `{"tool_perms":null}`,
+		"misspelled field":    `{"levle":0}`,
+		"misspelled tool":     `{"tool_perms":{"list_symbol":false}}`,
+		"trailing data":       `{"level":1} {"level":3}`,
+		"non-bool permission": `{"tool_perms":{"list_symbols":"no"}}`,
+	}
 	for name, body := range bad {
 		p := filepath.Join(dir, strings.ReplaceAll(name, " ", "_")+".json")
 		_ = os.WriteFile(p, []byte(body), 0o600)
