@@ -697,7 +697,7 @@ pub async fn create_from_spec(params: Value, ctx: &AppContext) -> Result<Value> 
     // Write task.yaml into .claw/tasks/<id>/
     let task_dir = ctx.config.data_dir.join("tasks").join(&task_id);
     tokio::fs::create_dir_all(&task_dir).await?;
-    let yaml = serde_yaml::to_string(&spec)
+    let yaml = serde_norway::to_string(&spec)
         .map_err(|e| anyhow::anyhow!("spec serialization failed: {e}"))?;
     tokio::fs::write(task_dir.join("task.yaml"), yaml).await?;
 

@@ -178,7 +178,7 @@ impl Default for RecipeEngine {
 /// Parse a single YAML recipe file.
 fn load_recipe_file(path: &Path) -> Result<WorkflowRecipe> {
     let content = std::fs::read_to_string(path)?;
-    let raw: serde_json::Value = serde_yaml::from_str(&content)
+    let raw: serde_json::Value = serde_norway::from_str(&content)
         .map_err(|e| anyhow::anyhow!("YAML parse error in {}: {}", path.display(), e))?;
 
     // Assign id from filename if not present in YAML.

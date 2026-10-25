@@ -47,7 +47,7 @@ fn load_eval_file(path: &std::path::Path) -> Result<Vec<EvalCase>> {
     let raw = std::fs::read_to_string(path)
         .with_context(|| format!("read eval file {}", path.display()))?;
     let cases: Vec<EvalCase> =
-        serde_yaml::from_str(&raw).with_context(|| format!("parse {}", path.display()))?;
+        serde_norway::from_str(&raw).with_context(|| format!("parse {}", path.display()))?;
     Ok(cases)
 }
 

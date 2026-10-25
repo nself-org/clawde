@@ -21,7 +21,7 @@ pub async fn test(ctx: &AppContext, params: Value) -> Result<Value> {
     if let Some(fp) = file_path {
         // Single file mode
         let content = tokio::fs::read_to_string(fp).await?;
-        let test_file: PolicyTestFile = serde_yaml::from_str(&content)
+        let test_file: PolicyTestFile = serde_norway::from_str(&content)
             .map_err(|e| anyhow::anyhow!("invalid policy test YAML: {}", e))?;
         let summary = crate::policy::tester::run_test_file(&test_file);
         Ok(json!({

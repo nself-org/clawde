@@ -29,7 +29,7 @@ steps:
   - name: build
     command: "cargo build"
 "#;
-        let config: CiConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: CiConfig = serde_norway::from_str(yaml).unwrap();
         assert_eq!(config.steps.len(), 1);
         assert_eq!(config.steps[0].name, "build");
         assert_eq!(
@@ -53,7 +53,7 @@ steps:
   - name: summary
     command: "Write review summary"
 "#;
-        let config: CiConfig = serde_yaml::from_str(yaml).unwrap();
+        let config: CiConfig = serde_norway::from_str(yaml).unwrap();
         assert_eq!(config.steps.len(), 3);
         assert_eq!(config.steps[0].name, "lint");
         assert_eq!(config.steps[1].name, "security");

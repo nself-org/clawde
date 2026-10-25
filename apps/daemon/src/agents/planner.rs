@@ -33,8 +33,8 @@ pub struct PlannerOutput {
 }
 
 /// Parse the Planner agent's YAML output.
-pub fn parse_planner_output(yaml: &str) -> Result<PlannerOutput, serde_yaml::Error> {
-    serde_yaml::from_str(yaml)
+pub fn parse_planner_output(yaml: &str) -> Result<PlannerOutput, serde_norway::Error> {
+    serde_norway::from_str(yaml)
 }
 
 /// System prompt content for the Planner agent role.

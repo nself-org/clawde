@@ -175,7 +175,7 @@ pub async fn run_all_policy_tests(policy_dir: &Path) -> Result<TestSummary> {
 
 async fn load_and_run_test_file(path: &Path) -> Result<TestSummary> {
     let content = tokio::fs::read_to_string(path).await?;
-    let test_file: PolicyTestFile = serde_yaml::from_str(&content)?;
+    let test_file: PolicyTestFile = serde_norway::from_str(&content)?;
     Ok(run_test_file(&test_file))
 }
 

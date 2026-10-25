@@ -67,7 +67,7 @@ pub async fn migrate_tasks_to_claw(storage: &TaskStorage, data_dir: &Path) -> Re
         };
 
         // Write task.yaml
-        let yaml = serde_yaml::to_string(&spec)
+        let yaml = serde_norway::to_string(&spec)
             .unwrap_or_else(|_| format!("# failed to serialize task {}", task.id));
         tokio::fs::write(&spec_path, yaml).await?;
 
