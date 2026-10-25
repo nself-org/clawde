@@ -8,9 +8,9 @@
     "mobile": "pnpm --filter @clawde/mobile start",
     "mobile:ios": "pnpm --filter @clawde/mobile ios",
     "mobile:android": "pnpm --filter @clawde/mobile android",
-    "typecheck": "pnpm -r run type-check",
-    "lint": "pnpm -r run lint",
-    "test": "pnpm -r run test"
+    "typecheck": "pnpm --filter './apps/*' --if-present run typecheck && pnpm --filter './apps/*' --if-present run type-check",
+    "lint": "pnpm --filter './apps/*' run lint",
+    "test": "pnpm --filter './apps/*' run test"
   },
   "engines": {
     "node": ">=20",

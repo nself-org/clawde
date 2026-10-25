@@ -47,3 +47,8 @@ auditConfig:
   ignoreGhsas:
     - GHSA-86w9-cpqp-85rv # node-forge, CVE-2026-85393: no patched release
     - GHSA-vfj7-8cjw-p6xm # braces, CVE-2026-93687: no patched release
+
+# Install settings. pnpm 12 reads these from here and no longer from .npmrc,
+# so without them apps/desktop loses the hoisted i18next it imports.
+shamefullyHoist: true
+strictPeerDependencies: false
