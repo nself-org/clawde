@@ -535,6 +535,8 @@ Tests cover the MCP server contract. These are spec-level descriptions of requir
 
 ## 9. W14 Replacement Point
 
+> **Status:** the live Go MCP server (`intelligence/internal/hostadapter`) no longer uses the AllowAll stub. `NewPolicyEngine` implements the §4 algorithm (unknown caller deny, per-tool permission, trust-level default table; tools missing from the table are denied) and no environment variable can switch it to allow-all. Production wiring loads the caller's trust level and per-tool denials from the optional JSON file named by `CLAWDE_MCP_POLICY_FILE` (`{"level":0..3,"tool_perms":{"<tool>":false}}`); an unreadable or invalid file aborts startup. The Rust `PolicyEngine.evaluate()` stub below is the historical P1 text.
+
 The `PolicyEngine.evaluate()` stub (AllowAll) ships in P1 Wave W4 through W13. The stub is marked in source code with:
 
 ```rust

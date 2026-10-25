@@ -155,7 +155,7 @@ func newIngestor(t *testing.T, trusted bool, fetcher *stubFetcher, enq *stubEnqu
 	}
 	return NewKBIngestor(
 		hostadapter.NewTrustRegistry(trustIDs...),
-		hostadapter.NewAllowAllPolicy(),
+		hostadapter.NewPolicyEngine(hostadapter.PolicyEntry{ClientID: "client-1", Level: hostadapter.TrustStandard}),
 		hostadapter.NewSupplyChainPolicy(ingestTool),
 		fetcher,
 		enq,

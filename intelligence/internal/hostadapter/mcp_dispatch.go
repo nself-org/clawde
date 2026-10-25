@@ -23,8 +23,8 @@ type TrustRegistry interface {
 	IsTrusted(clientID string) bool
 }
 
-// PolicyEngine.Evaluate gates a tool call. The AllowAll stub (ADR-003) permits
-// every call; the real engine evaluates per-tool/per-workspace policy.
+// PolicyEngine.Evaluate gates a tool call (ADR-003 step 3). It is deny-by-default;
+// see policy_engine.go for the implementation.
 type PolicyEngine interface {
 	Evaluate(ctx context.Context, clientID, tool, workspaceID string) error
 }
@@ -51,16 +51,6 @@ func newStaticTrustRegistry(ids ...string) *staticTrustRegistry {
 func (r *staticTrustRegistry) IsTrusted(clientID string) bool {
 	_, ok := r.trusted[clientID]
 	return ok
-}
-
-// allowAllPolicy is the ADR-003 PolicyEngine stub.
-type allowAllPolicy struct{}
-
-func (allowAllPolicy) Evaluate(_ context.Context, _, _, _ string) error {
-	if !PolicyAllowAll() {
-		return fmt.Errorf("policy denied")
-	}
-	return nil
 }
 
 // toolSetSupplyChain permits only the registered MCP tools.

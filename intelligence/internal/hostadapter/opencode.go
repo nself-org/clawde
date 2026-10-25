@@ -267,22 +267,6 @@ func (a *OpenCodeAdapter) audit(
 	)
 }
 
-// ── ADR-003 AllowAll policy stub ─────────────────────────────────────────────
-
-// PolicyAllowAll reports whether the AllowAll policy is active. When
-// CLAWDE_POLICY_ENABLED is truthy the stub allows everything (ADR-003 placeholder
-// until the real policy engine lands). Defaults to allow.
-func PolicyAllowAll() bool {
-	v := strings.ToLower(strings.TrimSpace(os.Getenv("CLAWDE_POLICY_ENABLED")))
-	switch v {
-	case "", "true", "1", "yes", "on":
-		return true
-	default:
-		// Policy explicitly disabled — still allow (AllowAll stub semantics).
-		return true
-	}
-}
-
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 func (a *OpenCodeAdapter) workspaceFor(event HookEvent) string {
