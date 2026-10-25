@@ -211,17 +211,6 @@ func TestAuditLogEmitted(t *testing.T) {
 	}
 }
 
-func TestPolicyAllowAll(t *testing.T) {
-	t.Setenv("CLAWDE_POLICY_ENABLED", "true")
-	if !PolicyAllowAll() {
-		t.Error("expected allow when enabled")
-	}
-	t.Setenv("CLAWDE_POLICY_ENABLED", "")
-	if !PolicyAllowAll() {
-		t.Error("AllowAll stub must default to allow")
-	}
-}
-
 func TestName(t *testing.T) {
 	if NewOpenCodeAdapter(nil, nil, nil).Name() != "opencode" {
 		t.Fatal("Name() must be opencode")

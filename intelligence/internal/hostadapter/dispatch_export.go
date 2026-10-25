@@ -17,11 +17,6 @@ func NewTrustRegistry(ids ...string) TrustRegistry {
 	return newStaticTrustRegistry(ids...)
 }
 
-// NewAllowAllPolicy returns the ADR-003 PolicyEngine stub (gated by PolicyAllowAll).
-func NewAllowAllPolicy() PolicyEngine {
-	return allowAllPolicy{}
-}
-
 // NewSupplyChainPolicy returns a SupplyChainPolicy permitting only the given tools.
 // Unknown tools are denied.
 func NewSupplyChainPolicy(tools ...string) SupplyChainPolicy {

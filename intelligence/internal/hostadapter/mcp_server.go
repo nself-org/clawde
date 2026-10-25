@@ -293,7 +293,7 @@ func NewMCPServer(adapter *ClaudeCodeAdapter, clientID string) *MCPServer {
 		adapter:     adapter,
 		clientID:    clientID,
 		trust:       newStaticTrustRegistry(clientID),
-		policy:      allowAllPolicy{},
+		policy:      NewPolicyEngine(PolicyEntry{ClientID: clientID, Level: TrustElevated}),
 		supplyChain: newToolSetSupplyChain(tools...),
 		logger:      adapter.logger,
 	}
@@ -377,7 +377,7 @@ func (s *MCPServer) handleToolCall(ctx context.Context, req *rpcRequest) *rpcRes
 	if !s.trust.IsTrusted(s.clientID) {
 		return errResponse(req.ID, rpcAccessDenied, "denied: untrusted client_id")
 	}
-	// 3) PolicyEngine.evaluate (AllowAll stub).
+	// 3) PolicyEngine.evaluate (deny-by-default; spec §4).
 	if err := s.policy.Evaluate(ctx, s.clientID, p.Name, ws); err != nil {
 		return errResponse(req.ID, rpcAccessDenied, "denied by policy: "+err.Error())
 	}
