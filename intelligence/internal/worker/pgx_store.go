@@ -29,7 +29,10 @@ type pgxQueueStore struct {
 }
 
 // Compile-time interface assertion.
-var _ QueueStore = (*pgxQueueStore)(nil)
+var (
+	_ QueueStore = (*pgxQueueStore)(nil)
+	_ jobAcker   = (*pgxQueueStore)(nil)
+)
 
 // NewPgxQueueStore wraps pool in a pgxQueueStore.
 // A nil pool is valid construction; all methods will return an error.
@@ -101,17 +104,15 @@ func (s *pgxQueueStore) ReadMessage(ctx context.Context, queue string) (*Message
 	return msg, nil
 }
 
-// DeleteMessage acknowledges successful processing by marking the job done (status=4).
-func (s *pgxQueueStore) DeleteMessage(ctx context.Context, _ string, _ int64) error {
-	// Note: MsgID is 0 (sentinel) for pgxQueueStore — identity is carried in Message.JobID.
-	// Callers should use ArchiveByJobID; this method signature satisfies the interface.
-	// We cannot reliably delete by MsgID=0 here, so this is a no-op guard.
-	// Real ack is done by the worker via deleteByJobID when the handler returns nil.
+// DeleteMessage satisfies QueueStore but cannot ack: MsgID is 0 for every
+// clawde_job message, so there is nothing to match on. The Pool acks through
+// AckJob (jobAcker) instead.
+func (s *pgxQueueStore) DeleteMessage(_ context.Context, _ string, _ int64) error {
 	return nil
 }
 
-// deleteByJobID marks a job done (status=4). Called internally when handler succeeds.
-func (s *pgxQueueStore) deleteByJobID(ctx context.Context, jobID string) error {
+// AckJob marks a job done (status=4). Called by the Pool when the handler succeeds.
+func (s *pgxQueueStore) AckJob(ctx context.Context, jobID string) error {
 	if s.pool == nil {
 		return errNilPool
 	}

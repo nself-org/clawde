@@ -71,6 +71,13 @@ type QueueStore interface {
 	IncrRetry(ctx context.Context, jobID string, backoff time.Duration) error
 }
 
+// jobAcker is an optional QueueStore capability for stores that identify a job
+// by Message.JobID rather than Message.MsgID (pgxQueueStore: MsgID is always 0).
+// When the store implements it, the Pool acks through it instead of DeleteMessage.
+type jobAcker interface {
+	AckJob(ctx context.Context, jobID string) error
+}
+
 // Tracer wraps OTel span creation. Injected for testability.
 type Tracer interface {
 	StartSpan(ctx context.Context, name string, attrs map[string]string) (context.Context, func(error))
@@ -240,7 +247,7 @@ func (p *Pool) processMessage(ctx context.Context, msg *Message) {
 	spanAttrs["processing_time_ms"] = strconv.FormatInt(elapsed, 10)
 
 	if err == nil {
-		if delErr := p.store.DeleteMessage(ctx, msg.Queue, msg.MsgID); delErr != nil {
+		if delErr := p.ack(ctx, msg); delErr != nil {
 			p.logger.Error("ack failed", "queue", msg.Queue, "job", msg.JobID, "err", delErr)
 		} else {
 			p.logger.Info("job done", "queue", msg.Queue, "job", msg.JobID, "ms", elapsed)
@@ -262,6 +269,14 @@ func (p *Pool) processMessage(ctx context.Context, msg *Message) {
 		}
 	}
 	end(err)
+}
+
+// ack acknowledges a successfully processed message.
+func (p *Pool) ack(ctx context.Context, msg *Message) error {
+	if a, ok := p.store.(jobAcker); ok {
+		return a.AckJob(ctx, msg.JobID)
+	}
+	return p.store.DeleteMessage(ctx, msg.Queue, msg.MsgID)
 }
 
 // ── DLQ sweep goroutine ───────────────────────────────────────────────────────
