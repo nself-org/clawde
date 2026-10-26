@@ -143,6 +143,20 @@ fn every_never_expose_pattern_is_matched() {
     }
 }
 
+// ─── D-1143: multibyte input must not panic the preview slice ────────────────
+
+/// A high-entropy token whose 4th byte falls inside a multibyte character.
+/// Slicing the preview at byte 4 used to panic; the block must still fire and
+/// the preview must keep whole characters.
+#[test]
+fn multibyte_high_entropy_token_is_blocked_without_panic() {
+    let args = serde_json::json!({ "arg": "aééBCDEFGHIJKLMNOPQRSTUVWXYZ" });
+    match check_tool_args("bash", &args) {
+        Err(PolicyViolation::SecretDetected { detail, .. }) => assert_eq!(detail, "aééB..."),
+        other => panic!("expected SecretDetected, got {other:?}"),
+    }
+}
+
 // ─── pre-existing tests, kept verbatim ──────────────────────────────────────
 
 use serde_json::json;

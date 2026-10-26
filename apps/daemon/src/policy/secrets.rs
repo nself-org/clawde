@@ -97,7 +97,7 @@ fn check_string(_tool: &str, s: &str, path: &str) -> Result<(), PolicyViolation>
     for regex in COMPILED_PATTERNS.iter() {
         if let Some(m) = regex.find(s) {
             let matched = m.as_str();
-            let preview = format!("{}...", &matched[..matched.len().min(4)]);
+            let preview = format!("{}...", matched.chars().take(4).collect::<String>());
             return Err(PolicyViolation::SecretDetected {
                 location: path.to_string(),
                 detail: preview,
@@ -109,7 +109,7 @@ fn check_string(_tool: &str, s: &str, path: &str) -> Result<(), PolicyViolation>
     for word in s.split_whitespace() {
         let token = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '+' && c != '/');
         if token.len() >= 20 && crate::telemetry::redact::is_high_entropy(token) {
-            let preview = format!("{}...", &token[..token.len().min(4)]);
+            let preview = format!("{}...", token.chars().take(4).collect::<String>());
             return Err(PolicyViolation::SecretDetected {
                 location: path.to_string(),
                 detail: preview,

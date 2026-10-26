@@ -136,7 +136,7 @@ fn check_line(content: &str, file: &str, line: usize) -> Option<SecretViolation>
     for (name, regex) in SECRET_REGEXES.iter() {
         if let Some(m) = regex.find(content) {
             let matched = m.as_str();
-            let preview = format!("{}...", &matched[..matched.len().min(4)]);
+            let preview = format!("{}...", matched.chars().take(4).collect::<String>());
             return Some(SecretViolation {
                 file: file.to_string(),
                 line,
@@ -150,7 +150,7 @@ fn check_line(content: &str, file: &str, line: usize) -> Option<SecretViolation>
     for word in content.split_whitespace() {
         let token = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '+' && c != '/');
         if token.len() >= 20 && is_high_entropy(token, 20) {
-            let preview = format!("{}...", &token[..token.len().min(4)]);
+            let preview = format!("{}...", token.chars().take(4).collect::<String>());
             return Some(SecretViolation {
                 file: file.to_string(),
                 line,
@@ -179,6 +179,21 @@ mod tests {
         let violations = scan_patch(patch);
         assert!(!violations.is_empty());
         assert_eq!(violations[0].secret_type, "openai_key");
+    }
+
+    #[test]
+    fn multibyte_high_entropy_token_preview_does_not_panic() {
+        // Byte 4 falls inside the second 'é'; a byte-sliced preview panicked (D-1143).
+        let patch = "\
+--- a/main.rs
++++ b/main.rs
+@@ -1,1 +1,2 @@
+ fn main() {}
++let t = \"aééBCDEFGHIJKLMNOPQRSTUVWXYZ\";
+";
+        let violations = scan_patch(patch);
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].redacted_preview, "aééB...");
     }
 
     #[test]
