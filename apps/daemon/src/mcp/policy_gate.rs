@@ -401,4 +401,34 @@ mod tests {
         let e = GateDenial::ChainError("db".into()).into_error().to_string();
         assert_eq!(e, "MCP_POLICY_DENIED: chain_error: db");
     }
+
+    /// Regression: handler errors carrying an MCP prefix and a private key
+    /// must keep the prefix after redaction so `classify_error` maps them to
+    /// the correct wire code. Without the fix, `scan_error_output` replaces
+    /// the whole string with `[REDACTED: private key]` and `-32602` becomes
+    /// `-32603`.
+    #[tokio::test]
+    async fn guard_preserves_mcp_prefix_when_handler_error_contains_key() {
+        let g = gate();
+        let args = json!({});
+        let err_msg = "MCP_INVALID_PARAMS: cert contains -----BEGIN PRIVATE KEY-----\nMIIEFAKE\n-----END PRIVATE KEY-----";
+        let result = g
+            .guard(
+                "caller",
+                "create_task",
+                args,
+                "agent-1",
+                Ok(None),
+                |_args| async move { Err(anyhow::anyhow!("{}", err_msg)) },
+            )
+            .await;
+        let err = result.expect_err("handler returned error");
+        let msg = err.to_string();
+        assert!(msg.starts_with("MCP_INVALID_PARAMS:"), "{msg}");
+        assert!(!msg.contains("MIIEFAKE"), "{msg}");
+        assert!(!msg.contains("BEGIN PRIVATE KEY"), "{msg}");
+        // And classify_error must still pick up the prefix.
+        let mcp_err = super::super::dispatch::McpDispatcher::classify_error(&err);
+        assert_eq!(mcp_err.code, crate::mcp::transport::MCP_INVALID_PARAMS);
+    }
 }
