@@ -30,7 +30,7 @@ use tracing::warn;
 
 use crate::policy::hooks::PolicyHooks;
 use crate::policy::mcp_trust::TrustLevel;
-use crate::policy::output_scan::scan_log_output;
+use crate::policy::output_scan::scan_error_output;
 use crate::policy::{PolicyDecision, PolicyEngine};
 use crate::tasks::reducer::TaskState;
 
@@ -202,7 +202,7 @@ impl PolicyGate {
             .to_string();
         match handler(args).await {
             Ok(result) => Ok(redact_output(tool, result, &task_id)),
-            Err(e) => Err(anyhow::anyhow!("{}", scan_log_output(&e.to_string()))),
+            Err(e) => Err(anyhow::anyhow!("{}", scan_error_output(&e.to_string()))),
         }
     }
 }

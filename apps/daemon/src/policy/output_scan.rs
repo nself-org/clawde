@@ -122,6 +122,18 @@ fn redact_leaf(s: &str) -> String {
     }
 }
 
+/// Redact secrets from a log or display string, including whole private key
+/// bodies. This is the error-path counterpart to [`redact_value`]: handler
+/// errors are plain strings, not structured JSON, so they need the same
+/// whole-key rule applied at the string level.
+pub fn scan_error_output(text: &str) -> String {
+    if text.contains("PRIVATE KEY-----") {
+        "[REDACTED: private key]".to_string()
+    } else {
+        scan_log_output(text)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -201,5 +213,23 @@ mod tests {
         assert!(!out.to_string().contains(&key));
         assert_eq!(out["ok"], "hello");
         assert_eq!(out["t"], true);
+    }
+
+    /// D-1145: handler error strings must redact whole private key bodies,
+    /// not just the PEM header line. Without the fix, `scan_error_output`
+    /// (or `scan_log_output` on the error path) leaves the key body intact.
+    #[test]
+    fn scan_error_output_redacts_whole_private_key() {
+        let pem = "error: -----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF8PbnGy0AHB7MhgHcTz6sE2I2yPB\naFDrBz9vFqU4yplmMFRjHkDfKxYnGdNl0Jg==\n-----END RSA PRIVATE KEY-----";
+        let out = scan_error_output(pem);
+        assert_eq!(out, "[REDACTED: private key]");
+        assert!(!out.contains("MIIEpA"));
+        assert!(!out.contains("BEGIN RSA"));
+    }
+
+    #[test]
+    fn scan_error_output_preserves_non_key_errors() {
+        let msg = "connection refused: timeout after 30s";
+        assert_eq!(scan_error_output(msg), msg);
     }
 }
