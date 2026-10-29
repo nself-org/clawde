@@ -83,3 +83,15 @@ regexes = [
   '''bcrypt/argon2''',
   '''nself_pro_FAKE_TEST_KEY_DO_NOT_USE''',
 ]
+
+# Reviewed: synthetic PEM-shaped unit-test string (body is the literal "MIIEFAKE", not a key).
+# Anchored to the exact fixture line; a line allowlist survives the shallow CI checkout where
+# commit/author-based .gitleaksignore fingerprints do not match.
+[[rules]]
+id = "private-key"
+[[rules.allowlists]]
+description = "Synthetic private-key fixture in the MCP policy gate redaction test"
+regexTarget = "line"
+regexes = [
+  '''(?m)^\s*let err_msg = "MCP_INVALID_PARAMS: cert contains -----BEGIN PRIVATE KEY-----\\nMIIEFAKE\\n-----END PRIVATE KEY-----";$''',
+]

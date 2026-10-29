@@ -115,10 +115,50 @@ pub fn redact_value(v: Value) -> Value {
 }
 
 fn redact_leaf(s: &str) -> String {
-    if s.contains("PRIVATE KEY-----") {
+    redact_preserving_mcp_prefix(s)
+}
+
+/// Redact secrets from a log or display string, including whole private key
+/// bodies. This is the error-path counterpart to [`redact_value`]: handler
+/// errors are plain strings, not structured JSON, so they need the same
+/// whole-key rule applied at the string level.
+pub fn scan_error_output(text: &str) -> String {
+    redact_preserving_mcp_prefix(text)
+}
+
+/// Recognized MCP error prefixes that `McpDispatcher::classify_error` maps
+/// to wire codes. When a secret appears in the detail portion of one of
+/// these messages we must keep the prefix intact or the wire code changes
+/// (e.g. `-32602` → `-32603`).
+const MCP_ERROR_PREFIXES: &[&str] = &[
+    "MCP_INVALID_PARAMS:",
+    "MCP_UNKNOWN_ENTITY:",
+    "MCP_POLICY_DENIED:",
+    "MCP_SUPPLY_CHAIN_DENIED:",
+    "MCP_PROVIDER_NOT_AVAILABLE:",
+];
+
+/// Redact secrets from `text` while preserving any recognized MCP error
+/// prefix. If `text` starts with a known prefix the prefix is kept and only
+/// the detail after it is redacted; otherwise the original whole-string
+/// redaction rules apply.
+fn redact_preserving_mcp_prefix(text: &str) -> String {
+    for prefix in MCP_ERROR_PREFIXES {
+        if let Some(detail) = text.strip_prefix(prefix) {
+            let redacted_detail = if detail.contains("PRIVATE KEY-----") {
+                " [REDACTED: private key]"
+            } else {
+                // Return borrowed &str when no redaction is needed; fall back
+                // to scan_log_output which may allocate.
+                return format!("{prefix}{}", scan_log_output(detail));
+            };
+            return format!("{prefix}{redacted_detail}");
+        }
+    }
+    if text.contains("PRIVATE KEY-----") {
         "[REDACTED: private key]".to_string()
     } else {
-        scan_log_output(s)
+        scan_log_output(text)
     }
 }
 
@@ -201,5 +241,46 @@ mod tests {
         assert!(!out.to_string().contains(&key));
         assert_eq!(out["ok"], "hello");
         assert_eq!(out["t"], true);
+    }
+
+    /// D-1145: handler error strings must redact whole private key bodies,
+    /// not just the PEM header line. Without the fix, `scan_error_output`
+    /// (or `scan_log_output` on the error path) leaves the key body intact.
+    #[test]
+    fn scan_error_output_redacts_whole_private_key() {
+        // Test fixture: obviously fake PEM body (all-X placeholder) to avoid secret scanners.
+        let pem = "error: -----BEGIN RSA PRIVATE KEY-----\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n-----END RSA PRIVATE KEY-----";
+        let out = scan_error_output(pem);
+        assert_eq!(out, "[REDACTED: private key]");
+        assert!(!out.contains("MIIEpA"));
+        assert!(!out.contains("BEGIN RSA"));
+    }
+
+    #[test]
+    fn scan_error_output_preserves_non_key_errors() {
+        let msg = "connection refused: timeout after 30s";
+        assert_eq!(scan_error_output(msg), msg);
+    }
+
+    /// Regression: MCP error prefixes must survive secret redaction so
+    /// `McpDispatcher::classify_error` maps them to the correct wire code.
+    /// Stripping the prefix turns `-32602` into `-32603`.
+    #[test]
+    fn scan_error_output_preserves_mcp_prefix_when_redacting_key() {
+        let msg = "MCP_INVALID_PARAMS: cert contains -----BEGIN PRIVATE KEY-----\nMIIEFAKE\n-----END PRIVATE KEY-----";
+        let out = scan_error_output(msg);
+        assert!(out.starts_with("MCP_INVALID_PARAMS:"), "{out}");
+        assert!(!out.contains("MIIEFAKE"), "{out}");
+        assert!(!out.contains("BEGIN PRIVATE KEY"), "{out}");
+    }
+
+    #[test]
+    fn scan_error_output_preserves_all_mcp_prefixes_without_key() {
+        for prefix in super::MCP_ERROR_PREFIXES {
+            let msg = format!("{prefix} some detail");
+            let out = scan_error_output(&msg);
+            assert!(out.starts_with(prefix), "prefix lost in {out}");
+            assert!(out.contains("some detail"), "detail lost in {out}");
+        }
     }
 }
