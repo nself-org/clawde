@@ -25,6 +25,3 @@ b6b7d8a7edcd945157bb6e797acabc386a1db0b3:.gitleaksignore:ec-private-key:5
 5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/ios-release.yml:private-key:36
 # Reviewed 2026-06-18: documentation text describing the expected .p8 key format (.github workflow comment); no real key present
 5f18a5ce2e7a59b5231b7fd589858aa10d9886ce:.github/workflows/macos-release.yml:private-key:37
-
-# Reviewed: synthetic, truncated PEM fixture in the D-1145 redaction unit test; not a valid private key, replaced by a placeholder in a71fd358.
-f1a6630393af22d536e7fda0ab33a3a0e51a9e3d:apps/daemon/src/policy/output_scan.rs:private-key:223
