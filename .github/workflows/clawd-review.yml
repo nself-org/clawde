@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: ClawDE AI Review
-        uses: anthropics/claude-code-action@16f9f71ab9c490faf367f94dd294897edc25be33 # v1.0.261
+        uses: anthropics/claude-code-action@c84e279f859e2591391e95bd309286eb111c345f # v1.0.284
         with:
           prompt: >
             Review this pull request for:
